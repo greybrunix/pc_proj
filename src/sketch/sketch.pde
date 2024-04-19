@@ -1,46 +1,68 @@
 /**
- * Linear Interpolation with Key Control (Using keyPressed() and keyReleased()). 
+ * Linear Interpolation with Angle Control and Visual Indicator (Using keyPressed()).
  * 
- * Move the ball across the screen using arrow keys with lerping.  
+ * Control the angle of the ball with left and right arrow keys,
+ * and move it in the direction it's pointing with the up arrow key,
+ * with lerping to smooth out the movement.
  */
 
 float x;
 float y;
+float angle = 0;
+float targetAngle;
 float targetX;
 float targetY;
-float easing = 0.015; // Adjust the easing value for smoother movement
-float speed = 40; // Adjust the speed of movement
+float speed = 30;
+float easing = 0.015;
+float easingAngle = 0.2;
 
 void setup() {
-  size(1920, 1080); 
-  noStroke();  
-  x = width / 2; // Start at the center of the screen
+  size(1920, 1080);
+  noStroke();
+  x = width / 2;
   y = height / 2;
   targetX = x;
   targetY = y;
+  targetAngle = angle;
 }
 
-void draw() { 
+void draw() {
   background(51);
-  
-  // Use lerping to smoothly move towards the target position
+
+  // Calculate velocity components based on the angle
+  float vx = cos(angle) * speed;
+  float vy = sin(angle) * speed;
+
+  // Update position using lerping for smooth movement
   x = lerp(x, targetX, easing);
   y = lerp(y, targetY, easing);
-  
+
+  // Draw visual indicator for the angle
+  float lineLength = 50; // Length of the visual indicator line
+  float lineEndX = x + cos(angle) * lineLength;
+  float lineEndY = y + sin(angle) * lineLength;
+  stroke(255);
+  line(x, y, lineEndX, lineEndY);
+
+  // Draw the ball
   fill(255);
   ellipse(x, y, 66, 66);
 }
 
 void keyPressed() {
-  // Update the target position based on key presses
-  if (keyCode == UP) {
-    targetY = max(0, targetY - speed);
-  } else if (keyCode == DOWN) {
-    targetY = min(height, targetY + speed);
-  } else if (keyCode == LEFT) {
-    targetX = max(0, targetX - speed);
+  // Control the angle with left and right arrow keys
+  if (keyCode == LEFT) {
+    targetAngle -= 0.2;
+    angle = lerp(angle, targetAngle, easingAngle);
   } else if (keyCode == RIGHT) {
-    targetX = min(width, targetX + speed);
+    targetAngle += 0.2;
+    angle = lerp(angle, targetAngle, easingAngle);
+  }
+
+  // Update target position based on the angle when the up arrow key is pressed
+  if (keyCode == UP) {
+    targetX += cos(angle) * speed;
+    targetY += sin(angle) * speed;
   }
 }
 
