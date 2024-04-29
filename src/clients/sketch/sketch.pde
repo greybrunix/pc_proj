@@ -1,4 +1,4 @@
-/**
+/*
  * Linear Interpolation with Angle Control and Visual Indicator (Using keyPressed()).
  * 
  * Control the angle of the ball with left and right arrow keys,
@@ -9,9 +9,9 @@
 float x;
 float y;
 float angle = 0;
-float targetAngle;
-float targetX;
-float targetY;
+float playerAngle;
+float playerX;
+float playerY;
 float speed = 30;
 float easing = 0.015;
 float easingAngle = 0.2;
@@ -19,11 +19,9 @@ float easingAngle = 0.2;
 void setup() {
   size(1920, 1080);
   noStroke();
-  x = width / 2;
-  y = height / 2;
-  targetX = x;
-  targetY = y;
-  targetAngle = angle;
+  playerX = x = width / 4;
+  playerY = y = height / 4;
+  playerAngle = angle;
 }
 
 void draw() {
@@ -34,11 +32,11 @@ void draw() {
   float vy = sin(angle) * speed;
 
   // Update position using lerping for smooth movement
-  x = lerp(x, targetX, easing);
-  y = lerp(y, targetY, easing);
+  x = lerp(x,playerX, easing);
+  y = lerp(y,playerY, easing);
 
   // Draw visual indicator for the angle
-  float lineLength = 50; // Length of the visual indicator line
+  float lineLength = 10; // Length of the visual indicator line
   float lineEndX = x + cos(angle) * lineLength;
   float lineEndY = y + sin(angle) * lineLength;
   stroke(255);
@@ -46,23 +44,30 @@ void draw() {
 
   // Draw the ball
   fill(255);
-  ellipse(x, y, 66, 66);
+  ellipse(x, y, 15, 15);
+
+  //Draw the sun
+  ellipse(width/2,height/2,300,300);
+
 }
 
 void keyPressed() {
   // Control the angle with left and right arrow keys
   if (keyCode == LEFT) {
-    targetAngle -= 0.2;
-    angle = lerp(angle, targetAngle, easingAngle);
-  } else if (keyCode == RIGHT) {
-    targetAngle += 0.2;
-    angle = lerp(angle, targetAngle, easingAngle);
+    playerAngle -= 0.2;
+    angle = lerp(angle, playerAngle, easingAngle);
+  }
+  if (keyCode == RIGHT) {
+    playerAngle += 0.2;
+    angle = lerp(angle, playerAngle, easingAngle);
   }
 
   // Update target position based on the angle when the up arrow key is pressed
   if (keyCode == UP) {
-    targetX += cos(angle) * speed;
-    targetY += sin(angle) * speed;
+    playerX += cos(angle) * speed;
+    playerY += sin(angle) * speed;
   }
+
+  if (key == 'f'){} // para as balas
 }
 
