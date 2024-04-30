@@ -68,6 +68,5 @@ void keyPressed() {
     playerY += sin(angle) * speed;
   }
 
-  if (key == 'f'){} // para as balas
 }
 
