@@ -41,7 +41,7 @@ process(Msg) ->
 	    game:wait_game();
         "\logout" ->
             login:logout(hd([Cdr])),
-	    game:stop_game();
+	    game:stop_wait();
         _ ->
             ok
     end.
