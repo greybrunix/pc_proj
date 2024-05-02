@@ -31,13 +31,17 @@ process(Msg) ->
     [Car|Cdr] = Words,
     case Car of
         "\signup" ->
-            login:create_account(hd([Cdr]), lists:last([Cdr]));
+            login:create_account(hd([Cdr]), lists:last([Cdr])),
+	    game:setup_game();
         "\delete" ->
-            login:close_account(hd([Cdr]), lists:last([Cdr]));
+            login:close_account(hd([Cdr]), lists:last([Cdr])),
+	    game:del_game();
         "\login" ->
-            login:login(hd([Cdr]), lists:last([Cdr]));
+            login:login(hd([Cdr]), lists:last([Cdr])),
+	    game:wait_game();
         "\logout" ->
-            login:logout(hd([Cdr]));
+            login:logout(hd([Cdr])),
+	    game:stop_game();
         _ ->
             ok
     end.
