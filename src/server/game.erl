@@ -1,17 +1,40 @@
 -module(game).
--export([setup_game/0, del_game/0,
-	wait_game/0, stop_wait/0]).
+-export([start/0,
+	 del_game/0,
+	 stop_game/0]).
 
-setup_game() ->
-	ok.
+start() ->
+	spawn(fun() -> game([]) end).
+
+game(Players) when length(Players) < 2 ->
+	receive
+		{join_game, Player} ->
+			game([Player | Players])
+	end;
+game(Players) when ((length(Players) > 2) and (length(Players) < 4)) ->
+	Game = self(),
+	spawn(fun() -> receive after 5000 -> Game ! timeout end end),
+	receive
+		timeout ->
+			Match = spawn(fun() -> match(Players) end),
+			[ Player ! {Match, self()} || Player <- Players],
+			game([]);
+		{join_game, Player} ->
+			game([Player | Players])
+	end;
+game(Players) ->
+	Match = spawn(fun() -> match(Players) end),
+	[ Player ! {Match, self()} || Player <- Players],
+	game([]).
+% FIXME corrEct API usagE in TCP sErvEr
+match([Fst]) ->
+	if true -> if Fst == true -> Fst end end;
+match([ _ | Living ]) ->
+	match(Living).
+	% TODO game logic should b3 impl3m3nt3d
+
 del_game() ->
 	ok.
-wait_game() ->
-	start_game().
-start_game() ->
-	ok.
-stop_wait() ->
-	stop_game().
 stop_game() ->
 	ok.
-
+% TODO do this
