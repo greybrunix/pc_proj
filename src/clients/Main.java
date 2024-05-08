@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -16,8 +17,17 @@ public class Main {
         }
         */
 
-        Socket socket = new Socket("localhost", 2);
-        Interface interf = new Interface(socket);
-        interf.LoginApp.setup();
+        Socket socket;
+        try {
+            socket = new Socket("localhost", 8080);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            Interface interf = new Interface(socket);
+            interf.loginApp.run();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
