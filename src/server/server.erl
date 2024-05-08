@@ -1,16 +1,7 @@
 -module(server).
 -export([start/1, stop/1]).
 
-% erlc server.erl
-% erl
-% server:start(1234)
-% outro terminal, nc localhost 1234
-% outro terminal netstat -p tcp -na | grep 1234
-
 start(Port) -> spawn(fun() -> server(Port) end).
-% TODO importante, when a server closes it's open ports,
-% all clients should be dropped, this doesn't seem to happen
-% VULNERABILITY
 stop(Server) -> Server ! stop.
 
 server(Port) ->
@@ -30,20 +21,23 @@ process(Msg) ->
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
-        "\signup" ->
-            login:create_account(hd([Cdr]), lists:last([Cdr])),
-	    game:setup_game();
-        "\delete" ->
-            login:close_account(hd([Cdr]), lists:last([Cdr])),
+        "signup" ->
+            login:create_account(hd([Cdr]), tl(Cdr));
+	    %game:start(hd([Cdr]));
+        "delete" ->
+            login:close_account(hd([Cdr]), tl(Cdr)),
 	    game:del_game();
-        "\login" ->
-            login:login(hd([Cdr]), lists:last([Cdr])),
-	    game:wait_game();
-        "\logout" ->
+        "login" ->
+            login:login(hd([Cdr]), tl(Cdr));
+        "join" -> case list:member(Cdr, login:online()) of
+			true -> game:join_game(Cdr);
+			false -> ok
+		  end;
+        "logout" ->
             login:logout(hd([Cdr])),
-	    game:stop_wait();
+	    game:stop_game();
         _ ->
-            ok
+            ok% boomer
     end.
 
 room(Pids) ->
