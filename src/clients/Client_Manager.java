@@ -4,7 +4,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-class Client_Manager {
+public class Client_Manager {
     private Socket sock;
     private BufferedReader in;
     private PrintWriter out;
@@ -12,8 +12,8 @@ class Client_Manager {
     
     public Client_Manager(Socket sock) throws IOException {
         this.sock = sock;
-        this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        this.out = new PrintWriter(socket.getOutputStream());
+        this.in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        this.out = new PrintWriter(sock.getOutputStream());
     }
 
     public void send(String message) {
