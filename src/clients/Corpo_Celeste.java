@@ -6,6 +6,6 @@ public class Corpo_Celeste{
     public Corpo_Celeste(){
         this.xPos = 0;
         this.yPos = 0;
-        this,raio = 0;
+        this.raio = 0;
     }
 }
