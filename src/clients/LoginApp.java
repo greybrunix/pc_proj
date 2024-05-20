@@ -123,14 +123,15 @@ public class LoginApp extends PApplet {
         } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
                 mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
             Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
+            Interface.game.waitGame(userInput);
         } else {
             isTypingUsername = false;
             isTypingPassword = false;
         }
     }
 
-    public void run(LoginApp loginApp) {
-        String[] processingargs = {"Interface"};
-        PApplet.runSketch(processingargs, loginApp);
+    public void run() {
+        String[] processingargs = {"LoginApp"};
+        PApplet.runSketch(processingargs, Interface.loginApp);
     }
 }
