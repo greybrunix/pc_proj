@@ -1,0 +1,35 @@
+* Proj
+** Architecture
+*** Server
+   1. TCP server
+   2. Handles Login
+   3. Handles Account Creation
+   4. Handles Game Logic
+   5. Receives Requests from Clients:
+      + Account Requests from Graphical Interface and Account Management Interface
+      + Player Input from Graphical Interface
+      + Leaderboard request
+   6. Sends to Clients:
+      + Login/Logout/etc responses
+      + Player data
+      + Leaderboard
+*** Clients
+   1. Login Manager
+      + Command Line Interface for managing account details
+      + Sends requests for account creation, login, logout and account deletion
+   2. Graphical Interface
+      1) Authenticate account
+      2) Request to Join a Game
+         1. Receive a Match from server
+         2. Draw match
+            - If Inputs
+              1. Send Inputs to server
+              2. Draw scene with data from response
+              3. Loop until Match ends
+            - else
+              1. Receive Scene data from response
+              2. Loop until Match ends
+            - Note how data is received passively:
+              + However, the client can force the manipulation of the scene using
+                inputs
+      3) Request Players data for Leaderboards
