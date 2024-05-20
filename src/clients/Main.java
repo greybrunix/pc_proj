@@ -25,7 +25,8 @@ public class Main {
         }
         try {
             Interface interf = new Interface(socket);
-            interf.loginApp.run();
+            LoginApp loginApp = new LoginApp();
+            interf.loginApp.run(loginApp);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
