@@ -2,8 +2,8 @@ import processing.core.PApplet;
 
 public class LoginApp extends PApplet {
 
-    private String userInput = "";
-    private String passwordInput = "";
+    public String userInput = "";
+    public String passwordInput = "";
 
     int inputBoxWidth = 200;
     int inputBoxHeight = 30;

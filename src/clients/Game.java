@@ -2,14 +2,24 @@ import processing.core.PApplet;
 
 public class Game extends PApplet {
 
+    // TODO Create arraylist to store players and their values
+    private String user;
+
     private boolean waitingGame = false;
     private boolean gameStart = false;
+
     private float lineLenght;
     private float lineEndX;
     private float lineEndY;
 
+    private float angle = 0;
+    private float targetAngle;
+    private float easingAngle = 0.2F;
+
     public void settings() {
         size(1920, 1080);
+        noStroke();
+        targetAngle = angle;
     }
 
     public void draw() {
@@ -23,6 +33,7 @@ public class Game extends PApplet {
         } else if (gameStart) {
             gameStart();
         }
+        // TODO Draw all players and planets with updated values
     }
 
     public void gameStart() {
@@ -35,6 +46,7 @@ public class Game extends PApplet {
         drawBall((float) (width+720) /2, (float) (height-710) /2, 50, 255, 255, 255);
 
         // Draw Players
+        // TODO Add for loop to draw all players
         drawPlayer(500, 500, 10, 0, 173, 30, 209);
     }
 
@@ -44,16 +56,24 @@ public class Game extends PApplet {
     }
 
     public void drawPlayer(float x, float y, float diameter, float angle, int r, int g, int b) {
-        lineLenght = 10;
-        lineEndX = x + cos(angle) * lineLenght;
-        lineEndY = y + sin(angle) * lineLenght;
         stroke(255);
         line(x, y, lineEndX, lineEndY);
         drawBall(x, y, diameter, r, g, b);
     }
 
+    public void keyPressed() {
+        if (key == LEFT) {
+            Interface.keyPressed(user, "LEFT");
+        } else if (key == RIGHT) {
+            Interface.keyPressed(user, "RIGHT");
+        } else if (key == UP) {
+            Interface.keyPressed(user, "UP");
+        }
+    }
+
     public void waitGame(String username) {
         Interface.wantPlay(username);
+        user = username;
         // TODO Check if game is received before changing to game
         // waitingGame = true;
         gameStart = true;
@@ -64,4 +84,6 @@ public class Game extends PApplet {
         String[] processingargs = {"Game"};
         PApplet.runSketch(processingargs, Interface.game);
     }
+
+    // TODO Colisões, Vencedor, Gravidade, Órbita
 }

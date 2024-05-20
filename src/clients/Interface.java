@@ -42,4 +42,11 @@ public class Interface {
     public static void wantPlay(String username){
         client_manager.send("play " + username);
     }
+
+    public static void keyPressed(String username, String key){
+        client_manager.send("key " + key + " " + username);
+    }
+
+    // TODO Add page to choose between play game or check leaderboard after sign-in
+    // TODO Add option to delete account and to log out
 }

@@ -16,4 +16,6 @@ public class Player {
         fuel = 100;
         username = "";
     }
+
+    // TODO Add necessary variables
 }
