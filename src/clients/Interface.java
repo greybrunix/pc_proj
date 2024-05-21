@@ -6,12 +6,14 @@ public class Interface {
     public static LoginApp loginApp;
     public static Client_Manager client_manager;
     public static Game game;
+    public static GameOrLeaderboard gameOrLeaderboard;
 
     public Interface(Socket socket) throws IOException {
         try {
             client_manager = new Client_Manager(socket);
             loginApp = new LoginApp();
             game = new Game();
+            gameOrLeaderboard = new GameOrLeaderboard();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

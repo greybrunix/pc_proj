@@ -37,7 +37,7 @@ public class LoginApp extends PApplet {
         userTextX = inputBoxX + 5;
         userTextY = inputBoxY + (float) inputBoxHeight / 2;
         passwordTextX = inputBoxX + 5;
-        passwordTextY = passwordBoxY + inputBoxHeight / 2;
+        passwordTextY = passwordBoxY + (float) inputBoxHeight / 2;
     }
 
     public void draw() {
@@ -80,7 +80,6 @@ public class LoginApp extends PApplet {
 
     String hidePassword(String password) {
         StringBuilder hidden = new StringBuilder();
-        //noinspection StringRepeatCanBeUsed
         for (int i = 0; i < password.length(); i++) {
             hidden.append('*');
         }
@@ -125,13 +124,7 @@ public class LoginApp extends PApplet {
         } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
                 mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
             Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
-            try {
-                Interface.game.waitGame(userInput);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            Interface.gameOrLeaderboard.run(userInput);
         } else {
             isTypingUsername = false;
             isTypingPassword = false;

@@ -97,9 +97,9 @@ public class Game extends PApplet {
     public void waitGame(String username) throws IOException, InterruptedException {
         Interface.wantPlay(username);
         me.username = username;
-        //me.waitingGame = true;
-        me.waitingGame = false;
-        me.game = true;
+        me.waitingGame = true;
+        //me.waitingGame = false;
+        //me.game = true;
         receiveData();
         run();
     }
