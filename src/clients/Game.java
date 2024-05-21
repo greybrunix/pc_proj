@@ -3,7 +3,6 @@ import processing.core.PApplet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 
 public class Game extends PApplet {

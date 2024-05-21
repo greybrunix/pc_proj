@@ -56,7 +56,11 @@ public class GameOrLeaderboard extends PApplet {
             }
         } else if (mouseX >= leaderboardButtonX && mouseX <= leaderboardButtonX + leaderboardButtonWidth &&
                     mouseY >= leaderboardButtonY && mouseY <= leaderboardButtonY + leaderboardButtonHeight) {
-            // leaderboard
+            try {
+                Interface.leaderboard.askReceiveLeaderboard();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

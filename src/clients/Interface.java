@@ -7,6 +7,7 @@ public class Interface {
     public static Client_Manager client_manager;
     public static Game game;
     public static GameOrLeaderboard gameOrLeaderboard;
+    public static Leaderboard leaderboard;
 
     public Interface(Socket socket) throws IOException {
         try {
@@ -14,6 +15,7 @@ public class Interface {
             loginApp = new LoginApp();
             game = new Game();
             gameOrLeaderboard = new GameOrLeaderboard();
+            leaderboard = new Leaderboard();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -51,6 +53,13 @@ public class Interface {
         return client_manager.receive();
     }
 
-    // TODO Add page to choose between play game or check leaderboard after sign-in
+    public static void wantLeaderboard(){
+        client_manager.send("leaderboard");
+    }
+
+    public static String receiveLeaderboard() throws IOException {
+        return client_manager.receive();
+    }
+
     // TODO Add option to delete account and to log out
 }
