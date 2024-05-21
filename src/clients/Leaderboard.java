@@ -58,58 +58,8 @@ public class Leaderboard extends PApplet {
     }
 
     public void askReceiveLeaderboard() throws IOException {
-        //Interface.wantLeaderboard();
-        //leaderboard = Interface.receiveLeaderboard();
-        leaderboard = "{" +
-                "\"players\": {" +
-                "\"username\": {" +
-                "\"level\": 50," +
-                "\"victories_in_row\": 30," +
-                "\"loses_in_row\": 0," +
-                "\"x\": 0," +
-                "\"y\": 0," +
-                "\"diameter\": 0," +
-                "\"targetX\": 0," +
-                "\"targetY\": 0," +
-                "\"angle\": 0," +
-                "\"lineLenght\": 0," +
-                "\"lineEndX\": 0," +
-                "\"lineEndY\": 0," +
-                "\"targetAngle\": 0," +
-                "\"easingAngle\": 0," +
-                "\"r\": 0," +
-                "\"g\": 0," +
-                "\"b\": 0," +
-                "\"fuel\": 0," +
-                "\"waitingGame\": false," +
-                "\"game\": false," +
-                "\"gameOver\": false" +
-                "}," +
-                "\"username1\": {" +
-                "\"level\": 10," +
-                "\"victories_in_row\": 0," +
-                "\"loses_in_row\": 5," +
-                "\"x\": 0," +
-                "\"y\": 0," +
-                "\"diameter\": 0," +
-                "\"targetX\": 0," +
-                "\"targetY\": 0," +
-                "\"angle\": 0," +
-                "\"lineLenght\": 0," +
-                "\"lineEndX\": 0," +
-                "\"lineEndY\": 0," +
-                "\"targetAngle\": 0," +
-                "\"easingAngle\": 0," +
-                "\"r\": 0," +
-                "\"g\": 0," +
-                "\"b\": 0," +
-                "\"fuel\": 0," +
-                "\"waitingGame\": false," +
-                "\"game\": false," +
-                "\"gameOver\": false" +
-                "}" +
-                "}" +
-                "}";
+        Interface.wantLeaderboard();
+        leaderboard = Interface.receiveLeaderboard();
         GameData gameData = objectMapper.readValue(leaderboard, GameData.class);
         players = gameData.players;
         run();

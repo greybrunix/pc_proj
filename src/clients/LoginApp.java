@@ -76,6 +76,13 @@ public class LoginApp extends PApplet {
         fill(0);
         textAlign(CENTER, CENTER);
         text("Login", buttonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+
+        // Draw create account button
+        fill(200);
+        rect(buttonX, buttonY+50, buttonWidth+110, buttonHeight);
+        fill(0);
+        textAlign(CENTER, CENTER);
+        text("Create Account", buttonX + (buttonWidth+110) / 2, buttonY + 50 + buttonHeight / 2);
     }
 
     String hidePassword(String password) {
@@ -124,6 +131,10 @@ public class LoginApp extends PApplet {
         } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
                 mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
             Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
+            Interface.gameOrLeaderboard.run(userInput);
+        } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth + 110 &&
+                mouseY >= buttonY && mouseY <= buttonY + buttonHeight + 50) {
+            Interface.createUser(userInput, passwordInput); // TODO check if login was a success and change page to game
             Interface.gameOrLeaderboard.run(userInput);
         } else {
             isTypingUsername = false;
