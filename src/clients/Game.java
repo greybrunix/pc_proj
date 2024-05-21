@@ -1,3 +1,4 @@
+import com.fasterxml.jackson.core.JsonProcessingException;
 import processing.core.PApplet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -14,12 +15,11 @@ public class Game extends PApplet {
     Map<String, Player> players;
     Map<String, Planet> planets;
 
-
     Player me = new Player();
 
     public void settings() {
         size(1920, 1080);
-        //noStroke();
+        //noStroke(); isto faz com que não funcione (???)
     }
 
     public void draw() {
@@ -35,57 +35,28 @@ public class Game extends PApplet {
         }
     }
 
-    // TODO Read receive data, block process while data not received
     public void receiveData() throws IOException, InterruptedException {
-        //data = Interface.receiveData();
-        data = "{"
-                + "\"planets\": {"
-                + "    \"1\": {"
-                + "        \"distance\": 0,"
-                + "        \"x\": 1080,"
-                + "        \"y\": 720,"
-                + "        \"diameter\": 200,"
-                + "        \"r\": 255,"
-                + "        \"g\": 255,"
-                + "        \"b\": 0"
-                + "    }"
-                + "},"
-                + "\"players\": {"
-                + "    \"username\": {"
-                + "        \"level\": 0,"
-                + "        \"victories_in_row\": 0,"
-                + "        \"loses_in_row\": 0,"
-                + "        \"x\": 1000,"
-                + "        \"y\": 500,"
-                + "        \"diameter\": 100,"
-                + "        \"targetX\": 0,"
-                + "        \"targetY\": 0,"
-                + "        \"angle\": 0,"
-                + "        \"lineLenght\": 10,"
-                + "        \"lineEndX\": 0,"
-                + "        \"lineEndY\": 0,"
-                + "        \"targetAngle\": 0,"
-                + "        \"easingAngle\": 0,"
-                + "        \"r\": 100,"
-                + "        \"g\": 110,"
-                + "        \"b\": 110,"
-                + "        \"fuel\": 0,"
-                + "        \"waitingGame\": false,"
-                + "        \"game\": false,"
-                + "        \"gameOver\": false,"
-                + "        \"gameWon\": false"
-                + "    }"
-                + "}"
-                + "}";
-        try {
-            GameData gameData = objectMapper.readValue(data, GameData.class);
-            planets = gameData.planets;
-            players = gameData.players;
-        } finally {
-          //  while () {
-          //      wait();
-          //  }
-        }
+        new Thread(() -> {
+            while (me.game) {
+                try {
+                    data = Interface.receiveData();
+
+                    new Thread(() -> {
+                        try {
+                            GameData gameData = objectMapper.readValue(data, GameData.class);
+                            synchronized (this) {
+                                planets = gameData.planets;
+                                players = gameData.players;
+                            }
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).start();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
     }
 
     public void game() {
@@ -130,7 +101,6 @@ public class Game extends PApplet {
         me.waitingGame = false;
         me.game = true;
         receiveData();
-        // TODO Create thread that is always reading the values sent from the server and updating the arraylists
         run();
     }
 
