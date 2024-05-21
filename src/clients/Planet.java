@@ -1,5 +1,5 @@
 public class Planet extends Corpo_Celeste{
-    public float radius;
+    public float distance;
     public float x;
     public float y;
     public float diameter;

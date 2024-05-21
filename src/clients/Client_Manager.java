@@ -25,6 +25,4 @@ public class Client_Manager {
         String message = in.readLine();
         return message;
     }
-
-    // TODO Change receive to correct arguments
-}  
+}

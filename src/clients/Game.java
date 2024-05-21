@@ -1,17 +1,25 @@
 import processing.core.PApplet;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class Game extends PApplet {
 
-    ArrayList<Player> players = new ArrayList<Player>();
-    ArrayList<Planet> planets = new ArrayList<Planet>();
+    String data;
+
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    Map<String, Player> players;
+    Map<String, Planet> planets;
+
 
     Player me = new Player();
 
     public void settings() {
         size(1920, 1080);
-        noStroke();
+        //noStroke();
     }
 
     public void draw() {
@@ -20,40 +28,76 @@ public class Game extends PApplet {
         textSize(64);
         textAlign(LEFT, CENTER);
 
-        receiveData();
-
         if (me.waitingGame) {
             text("Waiting for players to begin game...", (float) (width-950) /2, (float) height /2 );
-        } else if (me.gameStart) {
-            gameStart();
-        } else if (me.ongoingGame) {
-            ongoingGame();
+        } else if (me.game) {
+            game();
         }
     }
 
     // TODO Read receive data, block process while data not received
-    public void receiveData() {
-
+    public void receiveData() throws IOException, InterruptedException {
+        //data = Interface.receiveData();
+        data = "{"
+                + "\"planets\": {"
+                + "    \"1\": {"
+                + "        \"distance\": 0,"
+                + "        \"x\": 1080,"
+                + "        \"y\": 720,"
+                + "        \"diameter\": 200,"
+                + "        \"r\": 255,"
+                + "        \"g\": 255,"
+                + "        \"b\": 0"
+                + "    }"
+                + "},"
+                + "\"players\": {"
+                + "    \"username\": {"
+                + "        \"level\": 0,"
+                + "        \"victories_in_row\": 0,"
+                + "        \"loses_in_row\": 0,"
+                + "        \"x\": 1000,"
+                + "        \"y\": 500,"
+                + "        \"diameter\": 100,"
+                + "        \"targetX\": 0,"
+                + "        \"targetY\": 0,"
+                + "        \"angle\": 0,"
+                + "        \"lineLenght\": 10,"
+                + "        \"lineEndX\": 0,"
+                + "        \"lineEndY\": 0,"
+                + "        \"targetAngle\": 0,"
+                + "        \"easingAngle\": 0,"
+                + "        \"r\": 100,"
+                + "        \"g\": 110,"
+                + "        \"b\": 110,"
+                + "        \"fuel\": 0,"
+                + "        \"waitingGame\": false,"
+                + "        \"game\": false,"
+                + "        \"gameOver\": false,"
+                + "        \"gameWon\": false"
+                + "    }"
+                + "}"
+                + "}";
+        try {
+            GameData gameData = objectMapper.readValue(data, GameData.class);
+            planets = gameData.planets;
+            players = gameData.players;
+        } finally {
+          //  while () {
+          //      wait();
+          //  }
+        }
     }
 
-    public void gameStart() {
-        for (Planet planet : planets) {
-            drawBall(planet.x, planet.y, planet.diameter, planet.r, planet.g, planet.b);
+    public void game() {
+        for (Map.Entry<String,Planet> planet : planets.entrySet()) {
+            drawBall(planet.getValue().x, planet.getValue().y, planet.getValue().diameter, planet.getValue().r, planet.getValue().g, planet.getValue().b);
         }
-        for (Player player : players) {
-            player.gameStart = false;
-            drawPlayer(player.x, player.y, player.diameter, player.angle, player.r, player.g, player.b,
-                    player.lineEndX, player.lineEndY);
-        }
-    }
-
-    public void ongoingGame() {
-        for (Planet planet : planets) {
-            drawBall(planet.x, planet.y, planet.diameter, planet.r, planet.g, planet.b);
-        }
-        for (Player player : players) {
-            drawPlayer(player.x, player.y, player.diameter, player.angle, player.r, player.g, player.b,
-                    player.lineEndX, player.lineEndY);
+        for (Map.Entry<String, Player> player : players.entrySet()) {
+            if (player.getValue().waitingGame)
+                player.getValue().waitingGame = false;
+            if (!player.getValue().gameOver)
+                drawPlayer(player.getValue().x, player.getValue().y, player.getValue().diameter, player.getValue().angle, player.getValue().r, player.getValue().b, player.getValue().b,
+                        player.getValue().lineEndX, player.getValue().lineEndY);
         }
     }
 
@@ -79,10 +123,14 @@ public class Game extends PApplet {
         }
     }
 
-    public void waitGame(String username) {
+    public void waitGame(String username) throws IOException, InterruptedException {
         Interface.wantPlay(username);
         me.username = username;
-        me.waitingGame = true;
+        //me.waitingGame = true;
+        me.waitingGame = false;
+        me.game = true;
+        receiveData();
+        // TODO Create thread that is always reading the values sent from the server and updating the arraylists
         run();
     }
 

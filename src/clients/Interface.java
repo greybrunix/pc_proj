@@ -45,6 +45,10 @@ public class Interface {
         client_manager.send("key " + key + " " + username);
     }
 
+    public static String receiveData() throws IOException {
+        return client_manager.receive();
+    }
+
     // TODO Add page to choose between play game or check leaderboard after sign-in
     // TODO Add option to delete account and to log out
 }

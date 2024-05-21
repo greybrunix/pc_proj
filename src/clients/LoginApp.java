@@ -1,5 +1,7 @@
 import processing.core.PApplet;
 
+import java.io.IOException;
+
 public class LoginApp extends PApplet {
 
     public String userInput = "";
@@ -123,7 +125,13 @@ public class LoginApp extends PApplet {
         } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
                 mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
             Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
-            Interface.game.waitGame(userInput);
+            try {
+                Interface.game.waitGame(userInput);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             isTypingUsername = false;
             isTypingPassword = false;

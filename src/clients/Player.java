@@ -19,7 +19,7 @@ public class Player {
    public float fuel;
    public String username;
    public boolean waitingGame;
-   public boolean gameStart;
-   public boolean ongoingGame;
+   public boolean game;
    public boolean gameOver;
+   public boolean gameWon;
 }
