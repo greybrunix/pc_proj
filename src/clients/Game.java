@@ -1,25 +1,17 @@
 import processing.core.PApplet;
 
+import java.util.ArrayList;
+
 public class Game extends PApplet {
 
-    // TODO Create arraylist to store players and their values
-    private String user;
+    ArrayList<Player> players = new ArrayList<Player>();
+    ArrayList<Planet> planets = new ArrayList<Planet>();
 
-    private boolean waitingGame = false;
-    private boolean gameStart = false;
-
-    private float lineLenght;
-    private float lineEndX;
-    private float lineEndY;
-
-    private float angle = 0;
-    private float targetAngle;
-    private float easingAngle = 0.2F;
+    Player me = new Player();
 
     public void settings() {
         size(1920, 1080);
         noStroke();
-        targetAngle = angle;
     }
 
     public void draw() {
@@ -28,26 +20,41 @@ public class Game extends PApplet {
         textSize(64);
         textAlign(LEFT, CENTER);
 
-        if (waitingGame) {
+        receiveData();
+
+        if (me.waitingGame) {
             text("Waiting for players to begin game...", (float) (width-950) /2, (float) height /2 );
-        } else if (gameStart) {
+        } else if (me.gameStart) {
             gameStart();
+        } else if (me.ongoingGame) {
+            ongoingGame();
         }
-        // TODO Draw all players and planets with updated values
+    }
+
+    // TODO Read receive data, block process while data not received
+    public void receiveData() {
+
     }
 
     public void gameStart() {
+        for (Planet planet : planets) {
+            drawBall(planet.x, planet.y, planet.diameter, planet.r, planet.g, planet.b);
+        }
+        for (Player player : players) {
+            player.gameStart = false;
+            drawPlayer(player.x, player.y, player.diameter, player.angle, player.r, player.g, player.b,
+                    player.lineEndX, player.lineEndY);
+        }
+    }
 
-        // Draw Sun and Planets
-        drawBall((float) width /2, (float) height /2, 100, 255, 255, 0);
-        drawBall((float) (width+900) /2, (float) (height-320) /2, 50, 255, 255, 255);
-        drawBall((float) (width-500) /2, (float) (height+230) /2, 50, 255, 255, 255);
-        drawBall((float) (width+650) /2, (float) (height+120) /2, 50, 255, 255, 255);
-        drawBall((float) (width+720) /2, (float) (height-710) /2, 50, 255, 255, 255);
-
-        // Draw Players
-        // TODO Add for loop to draw all players
-        drawPlayer(500, 500, 10, 0, 173, 30, 209);
+    public void ongoingGame() {
+        for (Planet planet : planets) {
+            drawBall(planet.x, planet.y, planet.diameter, planet.r, planet.g, planet.b);
+        }
+        for (Player player : players) {
+            drawPlayer(player.x, player.y, player.diameter, player.angle, player.r, player.g, player.b,
+                    player.lineEndX, player.lineEndY);
+        }
     }
 
     public void drawBall(float x, float y, float diameter, int r, int g, int b) {
@@ -55,7 +62,8 @@ public class Game extends PApplet {
         ellipse(x, y, diameter, diameter);
     }
 
-    public void drawPlayer(float x, float y, float diameter, float angle, int r, int g, int b) {
+    public void drawPlayer(float x, float y, float diameter, float angle, int r, int g, int b,
+                           float lineEndX, float lineEndY) {
         stroke(255);
         line(x, y, lineEndX, lineEndY);
         drawBall(x, y, diameter, r, g, b);
@@ -63,20 +71,18 @@ public class Game extends PApplet {
 
     public void keyPressed() {
         if (key == LEFT) {
-            Interface.keyPressed(user, "LEFT");
+            Interface.keyPressed(me.username, "LEFT");
         } else if (key == RIGHT) {
-            Interface.keyPressed(user, "RIGHT");
+            Interface.keyPressed(me.username, "RIGHT");
         } else if (key == UP) {
-            Interface.keyPressed(user, "UP");
+            Interface.keyPressed(me.username, "UP");
         }
     }
 
     public void waitGame(String username) {
         Interface.wantPlay(username);
-        user = username;
-        // TODO Check if game is received before changing to game
-        // waitingGame = true;
-        gameStart = true;
+        me.username = username;
+        me.waitingGame = true;
         run();
     }
 
@@ -84,6 +90,4 @@ public class Game extends PApplet {
         String[] processingargs = {"Game"};
         PApplet.runSketch(processingargs, Interface.game);
     }
-
-    // TODO Colisões, Vencedor, Gravidade, Órbita
 }
