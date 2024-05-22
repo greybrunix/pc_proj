@@ -6,8 +6,6 @@ public class GameOrLeaderboard {
 
     PApplet parent;
 
-    String username;
-
     int gameButtonWidth = 300;
     int gameButtonHeight = 200;
     int leaderboardButtonWidth = 300;
@@ -85,7 +83,7 @@ public class GameOrLeaderboard {
         if (parent.mouseX >= gameButtonX && parent.mouseX <= gameButtonX + gameButtonWidth &&
                 parent.mouseY >= gameButtonY && parent.mouseY <= gameButtonY + gameButtonHeight) {
             try {
-                Interface.game.waitGame(username);
+                Interface.game.waitGame(Interface.username);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -98,14 +96,16 @@ public class GameOrLeaderboard {
             }
         } else if (parent.mouseX >= logoutButtonX && parent.mouseX <= logoutButtonX + logoutButtonWidth &&
                 parent.mouseY >= logoutButtonY && parent.mouseY <= logoutButtonY + logoutButtonHeight) {
-            Interface.logoutUser(username);
+            Interface.logoutUser(Interface.username);
             Interface.gameOrLeaderboardMenu = false;
             Interface.loginMenu = true;
+            Interface.username = null;
         } else if (parent.mouseX >= deleteAccountButtonX && parent.mouseX <= deleteAccountButtonX + deleteAccountButtonWidth &&
         parent.mouseY >= deleteAccountButtonY && parent.mouseY <= deleteAccountButtonY + deleteAccountButtonWidth) {
-            Interface.deleteUser(username);
+            Interface.deleteUser(Interface.username);
             Interface.gameOrLeaderboardMenu = false;
             Interface.loginMenu = true;
+            Interface.username = null;
         }
     }
 }

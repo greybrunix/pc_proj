@@ -5,7 +5,8 @@ import java.net.Socket;
 
 public class Interface extends PApplet {
 
-    Socket socket;
+    public Socket socket;
+    public static String username;
 
     public static LoginApp loginApp;
     public static Client_Manager client_manager;

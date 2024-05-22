@@ -122,7 +122,7 @@ public class LoginApp {
                 if (parent.textWidth(passwordInput) < inputBoxWidth - 20) { // Check if text exceeds box width
                     passwordInput += parent.key;
                 }
-            } else if (parent.key == parent.BACKSPACE && !userInput.isEmpty()) {
+            } else if (parent.key == parent.BACKSPACE && !passwordInput.isEmpty()) {
                 passwordInput = passwordInput.substring(0, passwordInput.length() - 1);
             }
         }
@@ -142,11 +142,21 @@ public class LoginApp {
             Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
             Interface.loginMenu = false;
             Interface.gameOrLeaderboardMenu = true;
+            Interface.username = userInput;
+            userInput = "";
+            passwordInput = "";
+            isTypingUsername = false;
+            isTypingPassword = false;
         } else if (parent.mouseX >= buttonX && parent.mouseX <= buttonX + buttonWidth + 110 &&
                 parent.mouseY >= buttonY && parent.mouseY <= buttonY + buttonHeight + 50) {
             Interface.createUser(userInput, passwordInput); // TODO check if login was a success and change page to game
             Interface.loginMenu = false;
             Interface.gameOrLeaderboardMenu = true;
+            Interface.username = userInput;
+            userInput = "";
+            passwordInput = "";
+            isTypingUsername = false;
+            isTypingPassword = false;
         } else {
             isTypingUsername = false;
             isTypingPassword = false;
