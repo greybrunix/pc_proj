@@ -1,7 +1,11 @@
+import processing.core.PApplet;
+
 import java.io.IOException;
 import java.net.Socket;
 
-public class Interface {
+public class Interface extends PApplet {
+
+    Socket socket;
 
     public static LoginApp loginApp;
     public static Client_Manager client_manager;
@@ -9,16 +13,13 @@ public class Interface {
     public static GameOrLeaderboard gameOrLeaderboard;
     public static Leaderboard leaderboard;
 
-    public Interface(Socket socket) throws IOException {
-        try {
-            client_manager = new Client_Manager(socket);
-            loginApp = new LoginApp();
-            game = new Game();
-            gameOrLeaderboard = new GameOrLeaderboard();
-            leaderboard = new Leaderboard();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public static boolean loginMenu = true;
+    public static boolean gameOrLeaderboardMenu = false;
+    public static boolean leaderboardMenu = false;
+    public static boolean gameMenu = false;
+
+    public Interface(Socket s) throws IOException {
+        socket = s;
     }
 
     public static void createUser(String username,String pass){
@@ -61,5 +62,49 @@ public class Interface {
         return client_manager.receive();
     }
 
-    // TODO Add option to delete account and to log out
+    public void settings() {
+        size(1920, 1080);
+        try {
+            client_manager = new Client_Manager(socket);
+            loginApp = new LoginApp(this);
+            game = new Game();
+            gameOrLeaderboard = new GameOrLeaderboard(this);
+            leaderboard = new Leaderboard();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void setup() {
+        if (loginMenu)
+            loginApp.setup();
+        else if (gameOrLeaderboardMenu)
+            gameOrLeaderboard.setup();
+    }
+
+    public void draw() {
+        if (loginMenu)
+            loginApp.drawLogin();
+        else if (gameOrLeaderboardMenu) {
+            gameOrLeaderboard.drawGameOrLeaderboard();
+        }
+    }
+
+    public void keyPressed() {
+        if (loginMenu)
+            loginApp.keyPressed();
+    }
+
+    public void mousePressed() {
+        if (loginMenu)
+            loginApp.mousePressed();
+        else if (gameOrLeaderboardMenu) {
+            gameOrLeaderboard.mousePressed();
+        }
+    }
+
+    public void run() {
+        String[] processingargs = {"Interface"};
+        PApplet.runSketch(processingargs, this);
+    }
 }

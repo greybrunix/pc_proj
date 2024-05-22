@@ -2,7 +2,9 @@ import processing.core.PApplet;
 
 import java.io.IOException;
 
-public class GameOrLeaderboard extends PApplet {
+public class GameOrLeaderboard {
+
+    PApplet parent;
 
     String username;
 
@@ -24,85 +26,86 @@ public class GameOrLeaderboard extends PApplet {
     float deleteAccountButtonX;
     float deleteAccountButtonY;
 
-    public void settings() {
-        size(1920, 1080);
+    public GameOrLeaderboard(PApplet p) {
+        parent = p;
+        setup();
+    }
 
-        gameButtonX = (float) (width - gameButtonWidth - 500) / 2;
-        gameButtonY = (float) (height - gameButtonHeight) / 2;
-        leaderboardButtonX = (float) (width - leaderboardButtonWidth + 500) / 2;
-        leaderboardButtonY = (float) (height - leaderboardButtonHeight) / 2;
+    public void setup() {
+        gameButtonX = (float) (parent.width - gameButtonWidth - 500) / 2;
+        gameButtonY = (float) (parent.height - gameButtonHeight) / 2;
+        leaderboardButtonX = (float) (parent.width - leaderboardButtonWidth + 500) / 2;
+        leaderboardButtonY = (float) (parent.height - leaderboardButtonHeight) / 2;
         logoutButtonX = 20;
         logoutButtonY = 1000;
         deleteAccountButtonX = 1650;
         deleteAccountButtonY = 1000;
     }
 
-    public void draw() {
-        background(184);
-        fill(0);
-        textSize(32);
-        textAlign(LEFT, CENTER);
+    public void drawGameOrLeaderboard() {
+        parent.background(184);
+        parent.fill(0);
+        parent.textSize(32);
+        parent.textAlign(parent.LEFT, parent.CENTER);
 
         // Draw game button
-        fill(255);
-        rect(gameButtonX, gameButtonY, gameButtonWidth, gameButtonHeight);
-        fill(0);
-        textAlign(CENTER, CENTER);
-        text("Play Game", gameButtonX + (float) gameButtonWidth /2,
+        parent.fill(255);
+        parent.rect(gameButtonX, gameButtonY, gameButtonWidth, gameButtonHeight);
+        parent.fill(0);
+        parent.textAlign(parent.CENTER, parent.CENTER);
+        parent.text("Play Game", gameButtonX + (float) gameButtonWidth /2,
                 gameButtonY + (float) gameButtonHeight /2);
 
         // Draw leaderboard button
-        fill(255);
-        rect(leaderboardButtonX, leaderboardButtonY, leaderboardButtonWidth, leaderboardButtonHeight);
-        fill(0);
-        textAlign(CENTER, CENTER);
-        text("Leaderboard", leaderboardButtonX + (float) leaderboardButtonWidth / 2,
+        parent.fill(255);
+        parent.rect(leaderboardButtonX, leaderboardButtonY, leaderboardButtonWidth, leaderboardButtonHeight);
+        parent.fill(0);
+        parent.textAlign(parent.CENTER, parent.CENTER);
+        parent.text("Leaderboard", leaderboardButtonX + (float) leaderboardButtonWidth / 2,
                 leaderboardButtonY + (float) leaderboardButtonHeight / 2);
 
         // Draw logout button
-        fill(255);
-        rect(logoutButtonX, logoutButtonY, logoutButtonWidth, logoutButtonHeight);
-        fill(0);
-        textAlign(CENTER, CENTER);
-        text("Logout", logoutButtonX + (float) logoutButtonWidth / 2,
+        parent.fill(255);
+        parent.rect(logoutButtonX, logoutButtonY, logoutButtonWidth, logoutButtonHeight);
+        parent.fill(0);
+        parent.textAlign(parent.CENTER, parent.CENTER);
+        parent.text("Logout", logoutButtonX + (float) logoutButtonWidth / 2,
                 logoutButtonY + (float) logoutButtonHeight / 2);
 
         // Draw delete account button
-        fill(255);
-        rect(deleteAccountButtonX, deleteAccountButtonY, deleteAccountButtonWidth, deleteAccountButtonHeight);
-        fill(0);
-        textAlign(CENTER, CENTER);
-        text("Delete Account", deleteAccountButtonX + (float) deleteAccountButtonWidth / 2,
+        parent.fill(255);
+        parent.rect(deleteAccountButtonX, deleteAccountButtonY, deleteAccountButtonWidth, deleteAccountButtonHeight);
+        parent.fill(0);
+        parent.textAlign(parent.CENTER, parent.CENTER);
+        parent.text("Delete Account", deleteAccountButtonX + (float) deleteAccountButtonWidth / 2,
                 deleteAccountButtonY + (float) deleteAccountButtonHeight / 2);
     }
 
     public void mousePressed() {
-        if (mouseX >= gameButtonX && mouseX <= gameButtonX + gameButtonWidth &&
-                mouseY >= gameButtonY && mouseY <= gameButtonY + gameButtonHeight) {
+        if (parent.mouseX >= gameButtonX && parent.mouseX <= gameButtonX + gameButtonWidth &&
+                parent.mouseY >= gameButtonY && parent.mouseY <= gameButtonY + gameButtonHeight) {
             try {
                 Interface.game.waitGame(username);
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        } else if (mouseX >= leaderboardButtonX && mouseX <= leaderboardButtonX + leaderboardButtonWidth &&
-                    mouseY >= leaderboardButtonY && mouseY <= leaderboardButtonY + leaderboardButtonHeight) {
+        } else if (parent.mouseX >= leaderboardButtonX && parent.mouseX <= leaderboardButtonX + leaderboardButtonWidth &&
+                    parent.mouseY >= leaderboardButtonY && parent.mouseY <= leaderboardButtonY + leaderboardButtonHeight) {
             try {
                 Interface.leaderboard.askReceiveLeaderboard();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        } else if (mouseX >= logoutButtonX && mouseX <= logoutButtonX + logoutButtonWidth &&
-                mouseY >= logoutButtonY && mouseY <= logoutButtonY + logoutButtonHeight) {
-            Interface.loginApp.logoutUser(username);
-        } else if (mouseX >= deleteAccountButtonX && mouseX <= deleteAccountButtonX + deleteAccountButtonWidth &&
-        mouseY >= deleteAccountButtonY && mouseY <= deleteAccountButtonY + deleteAccountButtonWidth) {
-            Interface.loginApp.deleteUser(username);
+        } else if (parent.mouseX >= logoutButtonX && parent.mouseX <= logoutButtonX + logoutButtonWidth &&
+                parent.mouseY >= logoutButtonY && parent.mouseY <= logoutButtonY + logoutButtonHeight) {
+            Interface.logoutUser(username);
+            Interface.gameOrLeaderboardMenu = false;
+            Interface.loginMenu = true;
+        } else if (parent.mouseX >= deleteAccountButtonX && parent.mouseX <= deleteAccountButtonX + deleteAccountButtonWidth &&
+        parent.mouseY >= deleteAccountButtonY && parent.mouseY <= deleteAccountButtonY + deleteAccountButtonWidth) {
+            Interface.deleteUser(username);
+            Interface.gameOrLeaderboardMenu = false;
+            Interface.loginMenu = true;
         }
-    }
-
-    public void run(String user) {
-        username = user;
-        String[] processingargs = {"GameOrLeaderboard"};
-        PApplet.runSketch(processingargs, Interface.gameOrLeaderboard);
     }
 }
