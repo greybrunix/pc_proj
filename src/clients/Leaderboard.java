@@ -28,7 +28,6 @@ public class Leaderboard {
         rowHeight = 60;
         startX = parent.width/2;
         startY = 50;
-        System.out.println("AQUI FODASSE");
         try {
             askReceiveLeaderboard();
         } catch (IOException e) {

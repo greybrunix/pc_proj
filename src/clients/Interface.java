@@ -84,7 +84,6 @@ public class Interface extends PApplet {
         else if (gameMenu)
             game.setup();
         else if (leaderboardMenu) {
-            System.out.println("ENTREI");
             leaderboard.setup();
         }
     }
