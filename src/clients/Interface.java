@@ -68,9 +68,9 @@ public class Interface extends PApplet {
         try {
             client_manager = new Client_Manager(socket);
             loginApp = new LoginApp(this);
-            game = new Game();
+            game = new Game(this);
             gameOrLeaderboard = new GameOrLeaderboard(this);
-            leaderboard = new Leaderboard();
+            leaderboard = new Leaderboard(this);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -81,19 +81,31 @@ public class Interface extends PApplet {
             loginApp.setup();
         else if (gameOrLeaderboardMenu)
             gameOrLeaderboard.setup();
+        else if (gameMenu)
+            game.setup();
+        else if (leaderboardMenu) {
+            System.out.println("ENTREI");
+            leaderboard.setup();
+        }
     }
 
     public void draw() {
         if (loginMenu)
             loginApp.drawLogin();
-        else if (gameOrLeaderboardMenu) {
+        else if (gameOrLeaderboardMenu)
             gameOrLeaderboard.drawGameOrLeaderboard();
-        }
+        else if (gameMenu)
+            game.drawGameMenu();
+        else if (leaderboardMenu)
+            leaderboard.drawLeaderboardMenu();
+
     }
 
     public void keyPressed() {
         if (loginMenu)
             loginApp.keyPressed();
+        else if (gameMenu)
+            game.keyPressed();
     }
 
     public void mousePressed() {

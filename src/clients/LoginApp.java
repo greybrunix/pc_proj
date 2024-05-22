@@ -28,7 +28,6 @@ public class LoginApp {
 
     public LoginApp(PApplet p) {
         parent = p;
-        setup();
     }
 
     public void setup() {
@@ -143,6 +142,7 @@ public class LoginApp {
             Interface.loginMenu = false;
             Interface.gameOrLeaderboardMenu = true;
             Interface.username = userInput;
+            parent.setup();
             userInput = "";
             passwordInput = "";
             isTypingUsername = false;
@@ -153,6 +153,7 @@ public class LoginApp {
             Interface.loginMenu = false;
             Interface.gameOrLeaderboardMenu = true;
             Interface.username = userInput;
+            parent.setup();
             userInput = "";
             passwordInput = "";
             isTypingUsername = false;

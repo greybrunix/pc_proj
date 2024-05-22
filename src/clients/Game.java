@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Map;
 
-public class Game extends PApplet {
+public class Game {
+
+    PApplet parent;
 
     String data;
 
@@ -16,19 +18,28 @@ public class Game extends PApplet {
 
     Player me = new Player();
 
-    public void settings() {
-        size(1920, 1080);
-        //noStroke(); isto faz com que não funcione (???)
+    public Game(PApplet p) {
+        parent = p;
     }
 
-    public void draw() {
-        background(0);
-        fill(255);
-        textSize(64);
-        textAlign(LEFT, CENTER);
+    public void setup() {
+        try {
+            waitGame(Interface.username);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void drawGameMenu() {
+        parent.background(0);
+        parent.noStroke();
+        parent.fill(255);
+        parent.textSize(64);
+        parent.textAlign(parent.LEFT, parent.CENTER);
 
         if (me.waitingGame) {
-            text("Waiting for players to begin game...", (float) (width-950) /2, (float) height /2 );
+            parent.text("Waiting for players to begin game...", (float) (parent.width-950) /2,
+                    (float) parent.height /2 );
         } else if (me.game) {
             game();
         }
@@ -72,23 +83,23 @@ public class Game extends PApplet {
     }
 
     public void drawBall(float x, float y, float diameter, int r, int g, int b) {
-        fill(r, g, b);
-        ellipse(x, y, diameter, diameter);
+        parent.fill(r, g, b);
+        parent.ellipse(x, y, diameter, diameter);
     }
 
     public void drawPlayer(float x, float y, float diameter, float angle, int r, int g, int b,
                            float lineEndX, float lineEndY) {
-        stroke(255);
-        line(x, y, lineEndX, lineEndY);
+        parent.stroke(255);
+        parent.line(x, y, lineEndX, lineEndY);
         drawBall(x, y, diameter, r, g, b);
     }
 
     public void keyPressed() {
-        if (key == LEFT) {
+        if (parent.key == parent.LEFT) {
             Interface.keyPressed(me.username, "LEFT");
-        } else if (key == RIGHT) {
+        } else if (parent.key == parent.RIGHT) {
             Interface.keyPressed(me.username, "RIGHT");
-        } else if (key == UP) {
+        } else if (parent.key == parent.UP) {
             Interface.keyPressed(me.username, "UP");
         }
     }
@@ -100,11 +111,6 @@ public class Game extends PApplet {
         //me.waitingGame = false;
         //me.game = true;
         receiveData();
-        run();
-    }
-
-    public void run() {
-        String[] processingargs = {"Game"};
-        PApplet.runSketch(processingargs, Interface.game);
+        // TODO Block while number players is not enough
     }
 }

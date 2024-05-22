@@ -26,7 +26,6 @@ public class GameOrLeaderboard {
 
     public GameOrLeaderboard(PApplet p) {
         parent = p;
-        setup();
     }
 
     public void setup() {
@@ -82,30 +81,28 @@ public class GameOrLeaderboard {
     public void mousePressed() {
         if (parent.mouseX >= gameButtonX && parent.mouseX <= gameButtonX + gameButtonWidth &&
                 parent.mouseY >= gameButtonY && parent.mouseY <= gameButtonY + gameButtonHeight) {
-            try {
-                Interface.game.waitGame(Interface.username);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            Interface.gameOrLeaderboardMenu = false;
+            Interface.gameMenu = true;
+            parent.setup();
         } else if (parent.mouseX >= leaderboardButtonX && parent.mouseX <= leaderboardButtonX + leaderboardButtonWidth &&
                     parent.mouseY >= leaderboardButtonY && parent.mouseY <= leaderboardButtonY + leaderboardButtonHeight) {
-            try {
-                Interface.leaderboard.askReceiveLeaderboard();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            Interface.gameOrLeaderboardMenu = false;
+            Interface.leaderboardMenu = true;
+            parent.setup();
         } else if (parent.mouseX >= logoutButtonX && parent.mouseX <= logoutButtonX + logoutButtonWidth &&
                 parent.mouseY >= logoutButtonY && parent.mouseY <= logoutButtonY + logoutButtonHeight) {
             Interface.logoutUser(Interface.username);
             Interface.gameOrLeaderboardMenu = false;
             Interface.loginMenu = true;
             Interface.username = null;
+            parent.setup();
         } else if (parent.mouseX >= deleteAccountButtonX && parent.mouseX <= deleteAccountButtonX + deleteAccountButtonWidth &&
         parent.mouseY >= deleteAccountButtonY && parent.mouseY <= deleteAccountButtonY + deleteAccountButtonWidth) {
             Interface.deleteUser(Interface.username);
             Interface.gameOrLeaderboardMenu = false;
             Interface.loginMenu = true;
             Interface.username = null;
+            parent.setup();
         }
     }
 }
