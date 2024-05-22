@@ -7,10 +7,10 @@ public class LoginApp extends PApplet {
     public String userInput = "";
     public String passwordInput = "";
 
-    int inputBoxWidth = 200;
-    int inputBoxHeight = 30;
-    int buttonWidth = 100;
-    int buttonHeight = 40;
+    int inputBoxWidth;
+    int inputBoxHeight;
+    int buttonWidth;
+    int buttonHeight;
     int inputBoxX;
     int inputBoxY;
     int passwordBoxY;
@@ -27,6 +27,11 @@ public class LoginApp extends PApplet {
 
     public void settings() {
         size(1920, 1080);
+
+        inputBoxWidth = 200;
+        inputBoxHeight = 30;
+        buttonWidth = 100;
+        buttonHeight = 40;
 
         inputBoxX = (width - inputBoxWidth) / 2;
         inputBoxY = height / 2 - inputBoxHeight;
@@ -131,15 +136,29 @@ public class LoginApp extends PApplet {
         } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth &&
                 mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
             Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
+            Interface.gameOrLeaderboard = new GameOrLeaderboard();
             Interface.gameOrLeaderboard.run(userInput);
         } else if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth + 110 &&
                 mouseY >= buttonY && mouseY <= buttonY + buttonHeight + 50) {
             Interface.createUser(userInput, passwordInput); // TODO check if login was a success and change page to game
+            Interface.gameOrLeaderboard = new GameOrLeaderboard();
             Interface.gameOrLeaderboard.run(userInput);
         } else {
             isTypingUsername = false;
             isTypingPassword = false;
         }
+    }
+
+    public void deleteUser(String username) {
+        Interface.deleteUser(username);
+        Interface.loginApp = new LoginApp();
+        Interface.loginApp.run();
+    }
+
+    public void logoutUser(String username) {
+        Interface.logoutUser(username);
+        Interface.loginApp = new LoginApp();
+        Interface.loginApp.run();
     }
 
     public void run() {

@@ -25,8 +25,8 @@ public class Interface {
         client_manager.send("signup " + username +" " + pass);
     }
 
-    public static void deleteUser(String username,String pass){
-        client_manager.send("delete " + username + " " + pass);
+    public static void deleteUser(String username){
+        client_manager.send("delete " + username);
     }
 
     public static void loginUser(String username, String pass){
