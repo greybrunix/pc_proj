@@ -6,6 +6,7 @@ stop(Server) -> Server ! stop.
 
 server(Port) ->
     login:start(),
+    game:start(),
     {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
     Room = spawn(fun() -> room({}) end),
     spawn(fun() -> acceptor(LSock, Room) end),
@@ -32,8 +33,7 @@ process(Msg) ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
-                      true -> game:join_game(hd(Cdr)),
-                              "Waiting";
+                      true -> game:join_game(hd(Cdr));
                       false -> "ok"
                   end;
         "logout" ->
