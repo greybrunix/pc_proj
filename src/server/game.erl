@@ -1,5 +1,6 @@
 -module(game).
 -export([start/0,
+	 join_game/0,
 	 del_game/0,
 	 stop_game/0]).
 
