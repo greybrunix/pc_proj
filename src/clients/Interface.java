@@ -35,16 +35,12 @@ public class Interface extends PApplet {
         client_manager.send("login " + username + " " + pass);
     }
 
-    public static void joinUser(String username){
-        client_manager.send("join " + username);
-    }
-
     public static void logoutUser(String username){
         client_manager.send("logout " + username);
     }
 
     public static void wantPlay(String username){
-        client_manager.send("play " + username);
+        client_manager.send("join " + username);
     }
 
     public static void keyPressed(String username, String key){
