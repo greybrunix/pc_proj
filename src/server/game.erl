@@ -1,8 +1,10 @@
 -module(game).
 -export([start/0,
-	 join_game/0,
-	 del_game/0,
-	 stop_game/0]).
+	     join_game/1,
+	     del_game/0,
+	     stop_game/0,
+         match/1
+        ]).
 
 
 start() ->
@@ -15,16 +17,16 @@ game(Players) when length(Players) < 2 ->
 			game([Player | Players]);
 	end;
 
-game(Players) when ((length(Players) > 2) and (length(Players) < 4)) ->
+game(Players) when ((length(Players) >= 2) and (length(Players) < 4)) ->
 	Game = self(),
-	spawn(fun() -> receive after 5000 -> Game ! timeout end end),
+	Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
 	receive
 		timeout ->
 			Match = spawn(fun() -> match(Players) end),
 			[ Player ! {Match, self()} || Player <- Players],
 			game([]);
 		{join_game, Player} ->
-            ?MODULE ! {five_sec},
+            exit(Timer,kill),
 			game([Player | Players]);
             
 	end;
@@ -35,24 +37,22 @@ game(Players) ->
 	game([]).
 % FIXME corrEct API usagE in TCP sErvEr
 
-match([Fst]) ->
-	if true -> if Fst == true -> Fst end end;
-
-match([ _ | Living ]) ->
-	match(Living).
-	% TODO game logic should b3 impl3m3nt3d
-
 join_game(User) ->
     ?MODULE ! {join_game, User},
     receive
-        {more_players} -> 
-            "Waiting for more players";
-        {five_sec} -> 
-            "Waiting 5 more seconds";
+        {start} -> "Starting"
     end;
+
 
 del_game() ->
 	ok.
 stop_game() ->
 	ok.
+
+%-----------------------------MATCH------------------------------
+match([Player | Players]) ->
+	
+	% TODO game logic should b3 impl3m3nt3d
+
+
 % TODO do this
