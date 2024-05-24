@@ -37,12 +37,14 @@ game(Players) ->
 	game([]).
 % FIXME corrEct API usagE in TCP sErvEr
 
-join_game(User) ->
-    ?MODULE ! {join_game, User},
+join_game(UserPid) ->
+    ?MODULE ! {join_game, UserPid},
     receive
         {start} -> "Starting"
     end;
 
+keyPressed(Key, UserPid) -> 
+    ?MODULE ! {key, Key, } 
 
 del_game() ->
 	ok.
@@ -51,7 +53,7 @@ stop_game() ->
 
 %-----------------------------MATCH------------------------------
 match([Player | Players]) ->
-	
+    	
 	% TODO game logic should b3 impl3m3nt3d
 
 

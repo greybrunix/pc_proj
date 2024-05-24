@@ -18,7 +18,7 @@ acceptor(LSock, Room) ->
     Room ! {enter, self()},
     user(Sock, Room).
 
-process(Msg) ->
+process(Msg, Pid) ->
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
@@ -33,9 +33,14 @@ process(Msg) ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
-                      true -> game:join_game(hd(Cdr));
+                      true -> game:join_game(Pid);
                       false -> "ok"
                   end;
+        "key" -> 
+            game:keyPressed(hd(Cdr),Pid),
+
+        "leaderboard" -> 
+
         "logout" ->
             T = login:logout(hd(Cdr)),
             game:stop_game(),
@@ -52,7 +57,7 @@ room(Pids) ->
         {line, Data, Pid} ->
             io:format("received ~p~n", [Data]),
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
-            Pid ! {line, list_to_binary([process(Msg)])},
+            Pid ! {line, list_to_binary([process(Msg, Pid)])},
             room(Pids);
         {leave, Pid} ->
             io:format("user_left~p~n", [Pid]),
@@ -61,6 +66,8 @@ room(Pids) ->
 
 user(Sock, Room) ->
     receive
+        {Match,_} -> 
+            Match;
         {line, Data} ->
             gen_tcp:send(Sock, Data),
             user(Sock, Room);

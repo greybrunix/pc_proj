@@ -31,7 +31,10 @@ loop(State) ->
 handle({create_account, User, Passwd}, Map) ->
 	case maps:is_key(User, Map) of
 		false ->
-			{ok, Map#{User => {Passwd, true}}};
+			{ok, Map#{User => {Passwd, true, 0, 0, 0 %level,wins,losses
+                              }
+                     }
+            };
 		true ->
 			{user_exists, Map}
 	end;
@@ -44,19 +47,19 @@ handle({close_account, User, Passwd}, Map) ->
 	end;
 handle({login, User, Passwd}, Map) ->
 	case maps:find(User, Map) of
-		{ok, {P,false}} when P =:= Passwd ->
-			{ok,maps:update(User, {Passwd, true})};
-		{ok, {P, true}} when P =:= Passwd ->
+		{ok, {P,false,Level,Wins,Losses}} when P =:= Passwd ->
+			{ok,maps:update(User, {Passwd, true,Level,Wins,Losses},Map)};
+		{ok, {P, true,_,_,_}} when P =:= Passwd ->
 			{ok, Map};
 		_ ->
 			{invalid, Map}
 	end;
 handle({logout, User}, Map) ->
 	case maps:find(User, Map) of
-		{ok, {Pass,true}} ->
-			{ok,maps:update(User, {Pass, false}, Map)};
+		{ok, {Pass,true,Level,Wins,Losses}} ->
+			{ok,maps:update(User, {Pass,false,Level,Wins,Losses}, Map)};
 		_ ->
 			{op,Map}
 	end;
 handle(online, Map) ->
-	{[Username || {Username,{_,true}} <- maps:to_list(Map)], Map}.
+	{[Username || {Username,{_,true,_,_,_}} <- maps:to_list(Map)], Map}.
