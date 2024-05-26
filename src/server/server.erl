@@ -66,7 +66,7 @@ room(Pids) ->
 
 user(Sock, Room) ->
     receive
-        {Match,_} -> 
+        {Match,Game} -> 
             Match;
         {line, Data} ->
             gen_tcp:send(Sock, Data),

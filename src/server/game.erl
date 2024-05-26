@@ -11,18 +11,18 @@ start() ->
 	spawn(fun() -> game([]) end).
 
 
-loop(State) ->
+loop(PlayersInfo,PlanetsInfo) ->
 	receive
 		{Request, From} ->
-			{Result, NextState} = handle(Request, State),
+			{Result, NextPlayers,NextPlanets} = handle(Request,PlayersInfo,PlanetsInfo),
 			From ! {Result, ?MODULE},
-			loop(NextState)
+			loop(NextPlayers,NextPlanets);
 	end.
 
 game(PlayersPids) when length(PlayersPids) < 2 ->
 	receive
 		{join_game, UserPid} ->
-            ?MODULE ! {more_players},
+            ?MODULE ! {start},
 			game([UserPid | PlayersPids]);
 	end;
 
@@ -31,21 +31,19 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
 	Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
 	receive
 		timeout ->
-            Participants = through_players(PlayersPids),
-			Match = spawn(fun() -> match(Participants) end),
+			Match = spawn(fun() -> match(PlayersPids) end),
 			[ PlayerPid ! {Match, self()} || PlayerPid <- PlayersPids],
 			game([]);
 
 		{join_game, PlayerPid} ->
             exit(Timer,kill),
+            ?MODULE ! {start},
 			game([PlayerPid | PlayersPids]);
             
 	end;
 
 game(PlayersPids) ->
-    Participants = through_players(PlayersPids),
-	Match = spawn(fun() -> match(Participants) end),
-
+	Match = spawn(fun() -> match(PlayersPids) end),
 	[ PlayerPid ! {Match, self()} || PlayerPid <- PlayersPids],
 	game([]).
 
@@ -54,24 +52,40 @@ game(PlayersPids) ->
 join_game(PlayerPid) ->
     ?MODULE ! {join_game, PlayerPid},
     receive
-        {start} -> "Starting" end;
-keyPressed(Key, PlayerPid) -> 
-    ?MODULE ! {Request, Key},
-    
+        {start} -> "You Joined" 
+    end;
+
+keyPressed(Key, PlayerPid) ->
+    Request = {Key,PlayerPid},
+    ?MODULE ! {Request, self()},
+    receive
+        {Result, ?MODULE} -> Result;     
+    end;
+
 del_game() ->
 	ok.
 stop_game() ->
 	ok.
 
 %-----------------------------MATCH------------------------------
-match(Map) ->
-    
+match(Pids) ->
+    Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
+    
+    Loop = spawn(fun() -> loop(Participants,Planets) end),
 	% TODO game logic should b3 impl3m3nt3d
 
 
-% TODO do this
 
+%----------------------------HANDLES----------------------------
+
+handle({"UP", Pid},PlayersInfo,PlanetsInfo) ->
+
+handle({"LEFT", Pid},PlayersInfo,PlanetsInfo) ->
+
+handle({"RIGHT", Pid},PlayersInfo,PlanetsInfo) ->
+
+% TODO handles dos comandos
 %-----------------------FUNCOES AUXILIARES----------------------
 randomNumRange(Small,Big) ->
     random:uniform(Big - Small + 1) + Small - 1;
