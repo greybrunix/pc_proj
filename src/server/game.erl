@@ -14,7 +14,7 @@ start() ->
 loop(PlayersInfo,PlanetsInfo) ->
 	receive
 		{Request, From} ->
-			{Result, NextPlayers,NextPlanets} = handle(Request,PlayersInfo,PlanetsInfo),
+			{Result, NextPlayers} = handle(Request,PlayersInfo),
 			From ! {Result, ?MODULE},
 			loop(NextPlayers,NextPlanets);
 	end.
@@ -31,9 +31,14 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
 	Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
 	receive
 		timeout ->
-			Match = spawn(fun() -> match(PlayersPids) end),
-			[ PlayerPid ! {Match, self()} || PlayerPid <- PlayersPids],
-			game([]);
+            
+            Participants = through_players(PlayersPids),
+            Planets = generate_planets(randomNumRange(2,5)),
+
+			Match = spawn(fun() -> match(Participants,Planets) end),
+			[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+			
+            game([]);
 
 		{join_game, PlayerPid} ->
             exit(Timer,kill),
@@ -43,9 +48,14 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
 	end;
 
 game(PlayersPids) ->
-	Match = spawn(fun() -> match(PlayersPids) end),
-	[ PlayerPid ! {Match, self()} || PlayerPid <- PlayersPids],
-	game([]).
+    
+    Participants = through_players(PlayersPids),
+    Planets = generate_planets(randomNumRange(2,5)),
+
+	Match = spawn(fun() -> match(Participants,Planets) end),
+	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+	
+    game([]).
 
 % FIXME corrEct API usagE in TCP sErvEr
 
@@ -59,7 +69,7 @@ keyPressed(Key, PlayerPid) ->
     Request = {Key,PlayerPid},
     ?MODULE ! {Request, self()},
     receive
-        {Result, ?MODULE} -> Result;     
+        {Result,?MODULE} -> Result;     
     end;
 
 del_game() ->
@@ -68,24 +78,47 @@ stop_game() ->
 	ok.
 
 %-----------------------------MATCH------------------------------
-match(Pids) ->
-    Participants = through_players(PlayersPids),
-    Planets = generate_planets(randomNumRange(2,5)),
+match(Participants,Planets) ->
     
-    Loop = spawn(fun() -> loop(Participants,Planets) end),
+    spawn(fun() -> loop(Participants,Planets) end),
+    Match = self(),
+    spawn(fun() -> receive after 90000 -> Match ! timeover)
+    receive
+        {pressed,Key,Player} ->
+            {Result,Participants} = keyPressed(Key,Player),
+            %TODO verificar o estado da partida, para ver se acabou com ou sem vencedor
+
+        
+        has_winner ->
+            PlayersPids = maps:keys(Participants), 
+            [PlayerPid ! {matchover,has_winner,Match} || PlayerPid <- PlayersPids];
+        all_lost -> 
+            PlayersPids = maps:keys(Participants), 
+            [PlayerPid ! {matchover,all_lost,Match} || PlayerPid <- PlayersPids];
+        timeover ->
+            PlayersPids = maps:keys(Participants), 
+            [PlayerPid ! {matchover,timeover,Match} || PlayerPid <- PlayersPids];
+        
+    end;
+    
 	% TODO game logic should b3 impl3m3nt3d
 
 
 
 %----------------------------HANDLES----------------------------
 
-handle({"UP", Pid},PlayersInfo,PlanetsInfo) ->
+handle({"UP", Pid},PlayersInfo) ->
+            NextPlayers = 
 
-handle({"LEFT", Pid},PlayersInfo,PlanetsInfo) ->
+            {ok,NextPlayers};
 
-handle({"RIGHT", Pid},PlayersInfo,PlanetsInfo) ->
+handle({"LEFT", Pid},PlayersInfo) ->
+            {ok,NextPlayers};
 
-% TODO handles dos comandos
+handle({"RIGHT", Pid},PlayersInfo) ->
+            {ok,NextPlayers};
+
+
 %-----------------------FUNCOES AUXILIARES----------------------
 randomNumRange(Small,Big) ->
     random:uniform(Big - Small + 1) + Small - 1;
@@ -109,7 +142,7 @@ generate_planets(Int,Sistema) ->
                                     randomNumRange(90,255),
                                     randomNumRange(90,255)}),
             generate_planets(Int-1,Sistema);
-
+    end.
 
 newPlayerPos(Player,Map) ->
     X = randomNumRange(300,1600),

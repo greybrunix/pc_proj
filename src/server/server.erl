@@ -38,6 +38,8 @@ process(Msg, Pid) ->
                   end;
         "key" -> 
             game:keyPressed(hd(Cdr),Pid),
+            %TODO como 
+            
 
         "leaderboard" -> 
 
@@ -66,8 +68,16 @@ room(Pids) ->
 
 user(Sock, Room) ->
     receive
-        {Match,Game} -> 
-            Match;
+        {in_match,Party} -> 
+            %TODO ver como guardar Partidas
+        {matchover,Reason,Match} ->
+            case Reason of
+                timeover ->
+                has_winner ->
+                all_lost -> 
+                %TODO aqui atualizar a informaçao geral do jogador
+            end;
+
         {line, Data} ->
             gen_tcp:send(Sock, Data),
             user(Sock, Room);
