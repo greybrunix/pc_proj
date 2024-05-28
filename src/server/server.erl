@@ -68,9 +68,9 @@ room(Pids) ->
 
 user(Sock, Room) ->
     receive
-        {in_match,Party} -> 
+        {in_match,Match,Party} -> 
             %TODO ver como guardar Partidas
-        {matchover,Reason,Match} ->
+        {matchover,Reason,Pid,Participants} ->
             case Reason of
                 timeover ->
                 has_winner ->

@@ -82,41 +82,67 @@ match(Participants,Planets) ->
     
     spawn(fun() -> loop(Participants,Planets) end),
     Match = self(),
-    spawn(fun() -> receive after 90000 -> Match ! timeover)
+    spawn(fun() -> receive after 90000 -> Match ! timeover),
+    Tickrate = spawn(fun() -> receive after 40 -> Match ! tickover),
     receive
         {pressed,Key,Player} ->
-            {Result,Participants} = keyPressed(Key,Player),
-            %TODO verificar o estado da partida, para ver se acabou com ou sem vencedor
+            exit(Tickrate,kill),
+            {Result,NextParticipants} = keyPressed(Key,Player);
 
-        
+        tickover -> 
+
         has_winner ->
             PlayersPids = maps:keys(Participants), 
-            [PlayerPid ! {matchover,has_winner,Match} || PlayerPid <- PlayersPids];
+            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         all_lost -> 
             PlayersPids = maps:keys(Participants), 
-            [PlayerPid ! {matchover,all_lost,Match} || PlayerPid <- PlayersPids];
+            [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         timeover ->
             PlayersPids = maps:keys(Participants), 
-            [PlayerPid ! {matchover,timeover,Match} || PlayerPid <- PlayersPids];
+            [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         
     end;
     
-	% TODO game logic should b3 impl3m3nt3d
+    NextPlanets = updatePlanetsPos(Planets),
+    %TODO verificar o estado da partida, para ver se acabou com ou sem vencedor
+	match(NextParticipants,Planets).
 
 
 
 %----------------------------HANDLES----------------------------
 
 handle({"UP", Pid},PlayersInfo) ->
-            NextPlayers = 
+    {X,Y,Diameter,TargetX,TargetY,Angle,
+     LineLength,LineEndX,LineEndY,TargetAngle,
+     EasingAngle,R,G,B,Fuel,
+     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
-            {ok,NextPlayers};
+    NewInfo = ,
+    NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
+    
+    {ok,NextPlayers};
 
 handle({"LEFT", Pid},PlayersInfo) ->
-            {ok,NextPlayers};
+    {X,Y,Diameter,TargetX,TargetY,Angle,
+     LineLength,LineEndX,LineEndY,TargetAngle,
+     EasingAngle,R,G,B,Fuel,
+     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+
+    NewInfo = ,
+    NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
+    
+    {ok,NextPlayers};
 
 handle({"RIGHT", Pid},PlayersInfo) ->
-            {ok,NextPlayers};
+    {X,Y,Diameter,TargetX,TargetY,Angle,
+     LineLength,LineEndX,LineEndY,TargetAngle,
+     EasingAngle,R,G,B,Fuel,
+     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+
+    NewInfo = ,
+    NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
+
+    {ok,NextPlayers};
 
 
 %-----------------------FUNCOES AUXILIARES----------------------
@@ -180,4 +206,20 @@ through_players(List,Map) when length(List) > 0 ->
     through_players(tl(List),Map);
 
 through_players([],Map) -> 
-    Map;
+    Map.
+
+updatePlanetsPos(Planets,NumPlanet) ->
+
+    case NumPlanet>0 of
+
+        false ->
+            %TODO calculos dos planetas por tick
+
+            updatePlanetsPos(Planets,NumPlanet-1);
+
+        true -> Planets;
+
+    end.
+
+
+
