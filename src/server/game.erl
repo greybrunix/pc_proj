@@ -7,58 +7,80 @@
 start() ->
 	spawn(fun() -> game([]) end).
 
-game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
-    io:format("OLA~n"),
-    receive
-	{join_game,Username,PlayerPid} ->
-	    case length(PlayersPids) > 0 of
-		true ->
-		    NivelPlayer = login:player_level(Username),
-		    if
-			(((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
-			    game([[PlayerPid,Username] | PlayersPids],NiveldaSala);
-			true -> 
-			    game([[PlayerPid,Username] | PlayersPids],login:player_level(Username))
-				
-				
-		    end
-	    end
+addToSala({PlayerPid,Username},Sala) ->
+    Sala ++ [{PlayerPid,Username}].
+
+verifyPlayerLevel(Level,[[_|_],NiveldaSala]) ->
+    (((Level + 1) == NiveldaSala) or ((Level-1) == NiveldaSala)).
+
+game([]) ->
+        
+	receive
+		{join_game,Username,PlayerPid} ->
+            game([[[{PlayerPid,Username}],login:player_level(Username)]])
     end;
 
-game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
+game([[Participants,NiveldaSala]|Salas]) ->
+
     Game = self(),
-    io:format("VAMOS ESPERAR?~n"),
-    Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
-    receive
-	timeout ->
-	    io:format("elah aqui vamos~n"),
-            Participants = through_players(PlayersPids),
-            Planets = generate_planets(randomNumRange(2,5)),
+    if 
+        length(Participants) > 1 and length(Participants) < 4 ->
+            Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
+    end,
+        
+	receive
+		{join_game,Username,PlayerPid} ->
+            NivelPlayer = login:player_level(Username),
+		    case  verifyPlayerLevel(NivelPlayer,[Participants,NiveldaSala]) of
+		        true ->
+                    if  
+                        length(Participants) == 4 ->
 
-	    spawn(fun() -> initMatch(Participants,Planets) end),
-	    [ PlayerPid ! {in_match, [Participants, Planets]} || [PlayerPid | _] <- PlayersPids],
-
-            game([],0);
-
-	{join_game,Username,PlayerPid} ->
-            exit(Timer,kill),
-	    io:format("fds mais um...~n"),
-
-	    game([[PlayerPid,Username] | PlayersPids],NiveldaSala)
-    end.
-
-game(PlayersPids) ->
-    io:format("AQUI VAI E DAI~n"),
-    Participants = through_players(PlayersPids),
-    Planets = generate_planets(randomNumRange(2,5)),
+                            ParticipantsMap = through_players(PlayersPids),
+                            Planets = generate_planets(randomNumRange(2,5)),
     
-    ?MODULE ! {match,Participants,Planets},
-    ?MODULE ! {add_match,[Participants,Planets]},
+                            ?MODULE ! {match,Participants,Planets},
+                            ?MODULE ! {add_match,[Participants,Planets]},
+                            
+                            spawn(fun() -> initMatch(Participants,Planets) end),
 
+	                        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
 
-    spawn(fun() -> initMatch(Participants,Planets) end),
+                            game(Salas ++ [Participants,NivelSala])
+    
+                        length(Participants) > 1 and length(Participants) < 4 -> 
+                            exit(Timer,kill),
+	                        game([PlayerPid | PlayersPids],NiveldaSala)
 
-    game([]).
+                        
+				        length(Participants) == 1 ->
+
+				            WithNewPlayer = addToSala({PlayerPid,Username},Participants),
+                            game([WithNewPlayer|Salas])
+                        
+                    end    
+
+			    false ->
+                     if 
+                        length(Salas) == 0 ->
+				            game([[Participants,NiveldaSala]|Salas] ++ [[{PlayerPid,Username}],NivelPlayer])
+
+                     end
+
+            end,      
+	    timeout ->
+            ParticipantsMap = through_players(PlayersPids),
+            Planets = generate_planets(randomNumRange(2,5)),
+            
+            ?MODULE ! {match,Participants,Planets},
+            ?MODULE ! {add_match,[Participants,Planets]},
+	        
+            spawn(fun() -> initMatch(ParticipantsMap,Planets) end),
+	        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
+                                   
+            game(Salas ++ [Participants,NivelSala]);
+    end;
+
 
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
