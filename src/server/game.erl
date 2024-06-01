@@ -4,22 +4,21 @@
 	 get_matches/0
         ]).
 
-
 start() ->
 	spawn(fun() -> game([]) end).
-
 
 game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 	receive
 		{join_game,Username,PlayerPid} ->
 		case length(PlayersPids) > 0 of
-		    true -> 
+		    true ->
 			NivelPlayer = login:player_level(Username),
-			if 
+			if
 			    (((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
 				game([PlayerPid | PlayersPids],NiveldaSala);
 			    true -> 
 				game([[PlayerPid,Username] | PlayersPids],login:player_level(Username))
+
 
 			end
 		end
@@ -30,46 +29,63 @@ game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(Playe
     Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
     receive
 	timeout ->
-            
+
             Participants = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
 
 	    spawn(fun() -> initMatch(Participants,Planets) end),
 	    [ PlayerPid ! {in_match, Participants, Planets} || [PlayerPid | _] <- PlayersPids],
-			
+
             game([],0);
 
 	{join_game,Username,PlayerPid} ->
             exit(Timer,kill),
+
 	    game([[PlayerPid,Username] | PlayersPids],NiveldaSala)
-            
     end.
 
 game(PlayersPids) ->
     
     Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
+    
+    ?MODULE ! {match,Participants,Planets},
+    ?MODULE ! {add_match,[Participants,Planets]},
+
 
     spawn(fun() -> initMatch(Participants,Planets) end),
-	
+
     game([]).
 
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
-	_ -> ok
+        {match,Participants,Planets} ->
+            [Participants,Planets]
     end.
 
-keyPressed(Key, PlayerPid) -> ok.
+matchesOccurring(Matches) ->
+    NewMatches =
+        receive
+            {request_matches} -> 
+                ?MODULE ! {Matches},
+                Matches;
+            {add_match, Match} -> 
+                [Match | Matches];
+            {remove, Match} -> 
+                lists:delete(Match, Matches)
+        end,
+    matchesOccurring(NewMatches).
 
 
 get_matches() ->
     ?MODULE ! {request_matches}, % Completar onde vai receber isto
     receive
-	{Matches} -> Matches % Completar isto
+        {Matches} -> Matches % Completar isto
     end.
 
 %-----------------------------MATCH------------------------------
+
 getPid(Value) ->
     {_,_,_,_,
      _,_,_,_,
@@ -98,14 +114,15 @@ initMatch(Players, Planets) ->
 				lists:len(maps:keys(Planets))),
 	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids],
 	    initMatch(NewPlayers, NewPlanets)
+
     end.
 
 %----------------------------HANDLES----------------------------
-
 handle({"UP", Pid},PlayersInfo) ->
     {X,Y,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver, Pid}= maps:get(Pid,PlayersInfo),
+
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
@@ -221,6 +238,7 @@ updatePlayerPos(Players, [Player | T]) ->
      WaitingGame,InGame,GameOver} = maps:get(Player, Players),
     
     NewPlayer = {X0,Y0,Vx0, Vy0, Diameter,Angle,
+
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver},
     NewPlayers = maps:update(Player, NewPlayer, Players),
