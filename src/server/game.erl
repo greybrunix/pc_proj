@@ -1,10 +1,12 @@
 -module(game).
--export([start/0,
+-export([start/0j,
 	 join_game/2,
+	 key_pressed/2,
 	 get_matches/0
         ]).
 
 start() ->
+	register(memory, spawn(fun() -> matchesOccurring([])),
 	register(?MODULE, spawn(fun() -> game([]) end)).
 
 verifyPlayerLevel(Level, [[_|_], NiveldaSala]) ->
@@ -52,12 +54,11 @@ game([[Participants,NiveldaSala]|Salas]) ->
 			    ParticipantsMap = through_players(Participants),
 			    Planets = generate_planets(randomNumRange(2, 5)),
 
-			    ?MODULE ! {match, ParticipantsMap, Planets},
 			    ?MODULE ! {add_match, [ParticipantsMap, Planets]},
 
 			    spawn(fun() -> initMatch(ParticipantsMap, Planets) end),
 
-			    [PlayerPid ! {in_match, ParticipantsMap, Planets} || {PlayerPid, _} <- Participants],
+			    [PlayerPid ! {match, ParticipantsMap, Planets} || {PlayerPid, _} <- Participants],
 
 			    game(Salas);
 		        _ when (ParticipantsLen > 1) and (ParticipantsLen < 4) ->
@@ -85,12 +86,11 @@ game([[Participants,NiveldaSala]|Salas]) ->
             Planets = generate_planets(randomNumRange(2,5)),
             io:format("TimeoutPlanets~n"), 
             
-            ?MODULE ! {match,ParticipantsMap,Planets},
             ?MODULE ! {add_match,[ParticipantsMap,Planets]},
 	        
             io:format("Timeout~p~n", [ParticipantsMap]), 
             spawn(fun() -> initMatch(ParticipantsMap,Planets) end),
-	        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
+	    [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
                                    
             game(Salas)
     end.
@@ -102,8 +102,8 @@ join_game(PlayerPid,Username) ->
 matchesOccurring(Matches) ->
     NewMatches =
         receive
-            {request_matches} -> 
-                ?MODULE ! {Matches},
+            {request_matches, From} -> 
+                From ! {Matches},
                 Matches;
             {add_match, Match} -> 
                 [Match | Matches];
@@ -114,11 +114,13 @@ matchesOccurring(Matches) ->
 
 
 get_matches() ->
-    ?MODULE ! {request_matches}, % Completar onde vai receber isto
+    TO = whereis(matchesOccurring),
+    TO ! {request_matches, self()}, % Completar onde vai receber isto
     receive
         {Matches} -> Matches % Completar isto
     end.
-
+key_pressed(Key, Username) -> ok.
+    
 %-----------------------------MATCH------------------------------
 
 getPid(Value) ->
@@ -134,7 +136,7 @@ initMatch(Players, Planets) ->
     TestWinner    = length(maps:keys(maps:filter(FilterFun, Planets))),
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value  <- Values],
-    if (TestRemaining == 0) -> ?MODULE ! {remove, [Players, Planets]}
+    if (TestRemaining == 0 orelse (TestWinner == 1)) -> ?MODULE ! {remove, [Players, Planets]}
     end,
     if
 	(TestRemaining == 0) and (TestWinner == 1) ->

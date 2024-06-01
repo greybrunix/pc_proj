@@ -46,10 +46,16 @@ parser(Msg, Pid) ->
         "logout" ->
             T = login:logout(hd(Cdr)),
             io_lib:format("~p~n", [T]);
-        "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr)); % TODO verificar se já esta numa partida
-        _ ->
-            io_lib:format("~p~n", [no_command])
+	"key" -> 
+	    Matches = game:get_matches(),
+	    Match = [case maps:is_key(lists:last(Cdr),Participants) of
+			 true -> [Participants]; false -> [] end|| [Participants,_]<-Matches],
+	    case length(Match) of
+		1 -> game:keyPressed(hd(Cdr),lists:last(Cdr),hd(Match)); % TODO verificar se já esta numa partida
+		_ -> "invalid"
+	    end;
+	_ ->
+	    io_lib:format("~p~n", [no_command])
     end.
 
 room(Pids) ->
@@ -66,7 +72,6 @@ user(Sock, Room) ->
     Player = self(),
     receive
         {in_match,Match} ->
-            io:format("EI CAPUTA ~p~n", [Match]),
 	    self() ! {update_data,Match};
             %TODO ver como guardar Partidas
         {matchover,Reason,Pid,Participants} ->
