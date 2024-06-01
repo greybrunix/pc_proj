@@ -1,5 +1,5 @@
 -module(process).
--export([parser/2]).
+-export([parser/3]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
 stop(Server) -> Server ! stop.
@@ -46,19 +46,14 @@ parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
             io_lib:format("~p~n", [T]);
         _ ->
             io_lib:format("~p~n", [no_command])% boomer
-
-process(Msg, Pid, MatchPid) ->
-        "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr));
-            %TODO como 
-    end.
+    end;
 
 parser(Msg, Pid, MatchPid) -> 
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
         "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr));
+            game:keyPressed(hd(Cdr),lists:last(Cdr))
     end.
 
 room(Pids) ->
@@ -66,10 +61,6 @@ room(Pids) ->
         {enter, Pid} ->
             io:format("user_entered~p~n", [{Pid, ""}]),
             room([{Pid,""} | Pids]);
-        {line, Data, Pid} ->
-            io:format("received ~p~n", [Data]),
-            Pid ! {line, list_to_binary([process(Msg, Pid)])},
-            room(Pids);
         {leave, Pid} ->
             io:format("user_left~p~n", [Pid]),
             room(Pids -- [{Pid,""}])
@@ -97,7 +88,7 @@ user(Sock, Room, MatchPid) ->
             user(Sock,Room,MatchPid);
         {tcp, _, Data} ->
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
-            Player ! {line,list_to_binary([parser(Msg,self(),MatchPid)])}
+            Player ! {line,list_to_binary([parser(Msg,self(),MatchPid)])},
             user(Sock,Room,MatchPid);
         {tcp_closed, _} ->
             Room ! {leave, self()};
