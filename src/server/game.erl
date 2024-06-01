@@ -8,28 +8,30 @@ start() ->
 	spawn(fun() -> game([]) end).
 
 game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
-	receive
-		{join_game,Username,PlayerPid} ->
-		case length(PlayersPids) > 0 of
-		    true ->
-			NivelPlayer = login:player_level(Username),
-			if
-			    (((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
-				game([[PlayerPid,Username] | PlayersPids],NiveldaSala);
-			    true -> 
-				game([[PlayerPid,Username] | PlayersPids],login:player_level(Username))
-
-
-			end
-		end
-	end;
+    io:format("OLA~n"),
+    receive
+	{join_game,Username,PlayerPid} ->
+	    case length(PlayersPids) > 0 of
+		true ->
+		    NivelPlayer = login:player_level(Username),
+		    if
+			(((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
+			    game([[PlayerPid,Username] | PlayersPids],NiveldaSala);
+			true -> 
+			    game([[PlayerPid,Username] | PlayersPids],login:player_level(Username))
+				
+				
+		    end
+	    end
+    end;
 
 game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
     Game = self(),
+    io:format("VAMOS ESPERAR?~n"),
     Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
     receive
 	timeout ->
-
+	    io:format("elah aqui vamos~n"),
             Participants = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
 
@@ -40,12 +42,13 @@ game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(Playe
 
 	{join_game,Username,PlayerPid} ->
             exit(Timer,kill),
+	    io:format("fds mais um...~n"),
 
 	    game([[PlayerPid,Username] | PlayersPids],NiveldaSala)
     end.
 
 game(PlayersPids) ->
-    
+    io:format("AQUI VAI E DAI~n"),
     Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
     
