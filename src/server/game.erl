@@ -14,9 +14,8 @@ verifyPlayerLevel(Level,[[_|_],NiveldaSala]) ->
     (((Level + 1) == NiveldaSala) or ((Level-1) == NiveldaSala)).
 
 game([]) ->
-        
-	receive
-		{join_game,Username,PlayerPid} ->
+    receive
+	{join_game,Username,PlayerPid} ->
             game([[[{PlayerPid,Username}],login:player_level(Username)]])
     end;
 
@@ -24,51 +23,46 @@ game([[Participants,NiveldaSala]|Salas]) ->
 
     Game = self(),
     if 
-        length(Participants) > 1 and length(Participants) < 4 ->
-            Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
+        ((length(Participants) > 1) and (length(Participants) < 4)) ->
+            Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end)
     end,
         
-	receive
-		{join_game,Username,PlayerPid} ->
-            NivelPlayer = login:player_level(Username),
-		    case  verifyPlayerLevel(NivelPlayer,[Participants,NiveldaSala]) of
-		        true ->
-                    if  
-                        length(Participants) == 4 ->
+    receive
+	{join_game, Username, PlayerPid} ->
+	    NivelPlayer = login:player_level(Username),
+	    case verifyPlayerLevel(NivelPlayer, [Participants, NiveldaSala]) of
+		true ->
+		    ParticipantsLen = length(Participants),
+		    case ParticipantsLen of
+			4 ->
+			    ParticipantsMap = through_players(Participants),
+			    Planets = generate_planets(randomNumRange(2, 5)),
 
-                            ParticipantsMap = through_players(PlayersPids),
-                            Planets = generate_planets(randomNumRange(2,5)),
-    
-                            ?MODULE ! {match,Participants,Planets},
-                            ?MODULE ! {add_match,[Participants,Planets]},
-                            
-                            spawn(fun() -> initMatch(Participants,Planets) end),
+			    self() ! {match, Participants, Planets},
+			    self() ! {add_match, [Participants, Planets]},
 
-	                        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
+			    spawn(fun() -> initMatch(Participants, Planets) end),
 
-                            game(Salas ++ [Participants,NivelSala])
-    
-                        length(Participants) > 1 and length(Participants) < 4 -> 
-                            exit(Timer,kill),
-	                        game([PlayerPid | PlayersPids],NiveldaSala)
+			    [PlayerPid ! {in_match, ParticipantsMap, Planets} || {PlayerPid, _} <- Participants],
 
-                        
-				        length(Participants) == 1 ->
-
-				            WithNewPlayer = addToSala({PlayerPid,Username},Participants),
-                            game([WithNewPlayer|Salas])
-                        
-                    end    
-
-			    false ->
-                     if 
-                        length(Salas) == 0 ->
-				            game([[Participants,NiveldaSala]|Salas] ++ [[{PlayerPid,Username}],NivelPlayer])
-
-                     end
-
-            end,      
-	    timeout ->
+			    game(Salas ++ [[Participants, NiveldaSala]]);
+		        _ when (ParticipantsLen > 1) and (ParticipantsLen < 4) ->
+			    exit(Timer, kill),
+			    game([[PlayerPid | Participants], NiveldaSala]);
+			1 ->
+			    WithNewPlayer = addToSala({PlayerPid, Username}, Participants),
+			    game([[WithNewPlayer | Participants], NiveldaSala])
+		    end;
+		false ->
+		    case length(Salas) of
+			0 ->
+			    game([[Participants, NiveldaSala] ++ [[{PlayerPid, Username}], NivelPlayer]]);
+			_ ->
+			    %% Handle other cases if necessary
+			    game(Salas)
+		    end
+	    end;
+	{timeout} ->
             ParticipantsMap = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
             
@@ -78,7 +72,7 @@ game([[Participants,NiveldaSala]|Salas]) ->
             spawn(fun() -> initMatch(ParticipantsMap,Planets) end),
 	        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
                                    
-            game(Salas ++ [Participants,NivelSala]);
+            game(Salas ++ [Participants,NivelSala])
     end;
 
 
@@ -142,7 +136,7 @@ initMatch(Players, Planets) ->
 		updatePlanetsPos(Planets,
 				 lists:len(maps:keys(Planets))),
 	    NewPlayers =
-		updatePlayerPos(Players,
+		updatePlayersPos({Planets,Players},
 				lists:len(maps:keys(Planets))),
 	    [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
 	    initMatch(NewPlayers, NewPlanets)
@@ -184,7 +178,7 @@ handle({"RIGHT", Pid},PlayersInfo) ->
     Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
 
     NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
-	       R,G,B,Fuel,WaitingGame,InGame,GameOver},
+	       R,G,B,Fuel-math:sqrt(Vx*Vx+Vy*Vy),WaitingGame,InGame,GameOver},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
 
     {ok,NextPlayers}.
@@ -275,18 +269,32 @@ updatePlanetsPos(Planets,NumPlanet) ->
     NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
     updatePlanetsPos(NewPlanets,NumPlanet-1).
 
-updatePlayersPos(Players, []) ->
-    Players.
-updatePlayerPos(Players, [Player | T]) ->
+updatePlayersPos({_Planets,Players}, []) ->
+    Players;
+updatePlayersPos({Planets, Players}, [Player | T]) ->
     {X0,Y0, Vx0, Vy0, Diameter, Angle, R,G,B,Fuel,
-     WaitingGame,InGame,GameOver} = maps:get(Player, Players),
+     WaitingGame,InGame_,GameOver_} = maps:get(Player, Players),
     X = X0 + Vx0*0.0021,
     Y = Y0 + Vy0*0.0021,
     Vx = Vx0,
     Vy = Vy0,
+
+    Collided = lists:any(fun({_, {_, PX, PY, _, _, PDiameter, _, _, _}}) ->
+        math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)) < (Diameter / 2 + PDiameter / 2)
+    end, maps:to_list(Planets)),
+    
+    if
+        Collided ->
+            GameOver = true,
+            InGame = false;
+        true ->
+            GameOver = GameOver_,
+            InGame = InGame_
+    end,
+
     NewPlayer = {X,Y,Vx, Vy, Diameter,Angle,
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver},
     NewPlayers = maps:update(Player, NewPlayer, Players),
-    updatePlayerPos(NewPlayers, T).
+    updatePlayersPos({Planets,NewPlayers}, T).
 
