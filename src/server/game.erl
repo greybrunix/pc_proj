@@ -38,14 +38,14 @@ game([[Participants,NiveldaSala]|Salas]) ->
 			    ParticipantsMap = through_players(Participants),
 			    Planets = generate_planets(randomNumRange(2, 5)),
 
-			    self() ! {match, Participants, Planets},
-			    self() ! {add_match, [Participants, Planets]},
+			    self() ! {match, ParticipantsMap, Planets},
+			    self() ! {add_match, [ParticipantsMap, Planets]},
 
-			    spawn(fun() -> initMatch(Participants, Planets) end),
+			    spawn(fun() -> initMatch(ParticipantsMap, Planets) end),
 
 			    [PlayerPid ! {in_match, ParticipantsMap, Planets} || {PlayerPid, _} <- Participants],
 
-			    game(Salas ++ [[Participants, NiveldaSala]]);
+			    game(Salas);
 		        _ when (ParticipantsLen > 1) and (ParticipantsLen < 4) ->
 			    exit(Timer, kill),
 			    game([[PlayerPid | Participants], NiveldaSala]);
