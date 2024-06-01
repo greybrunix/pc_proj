@@ -51,6 +51,10 @@ game(PlayersPids) ->
     
     Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
+    
+    ?MODULE ! {match,Participants,Planets},
+    ?MODULE ! {add_match,[Participants,Planets]},
+
 
 	spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
 	
@@ -61,22 +65,31 @@ game(PlayersPids) ->
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
-	_ -> ok
+        {match,Participants,Planets} ->
+            [Participants,Planets]
+
     end.
 
-keyPressed(Key, PlayerPid) -> ok.
+matchesOccurring(Matches) ->
+    receive
+        {request_matches} -> 
+            ?MODULE ! {Matches},
+        {add_match,Match} -> 
+            New = [Match | Matches]),
+        {remove,Match} -> 
+            New = lists:delete(Match,Matches)
+    end,
 
-    
-del_game() ->
-	ok.
-stop_game() ->
-	ok.
+    matchesOccurring(New).
+
 
 get_matches() ->
     ?MODULE ! {request_matches}, % Completar onde vai receber isto
     receive
 	{Matches} -> Matches % Completar isto
     end.
+
+keyPressed(Key, PlayerPid) -> ok.
 
 %-----------------------------MATCH------------------------------
 initMatch(Participants,Planets,PlayersPids) ->
