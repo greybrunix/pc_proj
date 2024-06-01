@@ -60,10 +60,6 @@ room(Pids) ->
         {enter, Pid} ->
             io:format("user_entered~p~n", [{Pid, ""}]),
             room([{Pid,""} | Pids]);
-        {line, Data, Pid} ->
-            io:format("received ~p~n", [Data]),
-            Pid ! {line, list_to_binary([process(Msg, Pid)])},
-            room(Pids);
         {leave, Pid} ->
             io:format("user_left~p~n", [Pid]),
             room(Pids -- [{Pid,""}])
