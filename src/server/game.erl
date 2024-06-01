@@ -5,26 +5,40 @@
         ]).
 
 start() ->
-	spawn(fun() -> game([]) end).
+	register(?MODULE, spawn(fun() -> game([]) end)).
 
-addToSala({PlayerPid,Username},Sala) ->
-    Sala ++ [{PlayerPid,Username}].
-
-verifyPlayerLevel(Level,[[_|_],NiveldaSala]) ->
-    (((Level + 1) == NiveldaSala) or ((Level-1) == NiveldaSala)).
+verifyPlayerLevel(Level, [[_|_], NiveldaSala]) ->
+    Level1 = case is_binary(Level) of
+                 true -> 
+                     Level2 = binary_to_list(Level),
+                     list_to_integer(Level2);
+                 false -> list_to_integer(Level)
+             end,
+    NiveldaSala1 = case is_binary(NiveldaSala) of
+                       true -> 
+                           NiveldaSala2 = binary_to_list(NiveldaSala),
+                           list_to_integer(NiveldaSala2);
+                       false -> list_to_integer(NiveldaSala)
+                   end,
+    (((Level1 + 1) == NiveldaSala1) or ((Level1 - 1) == NiveldaSala1)) or
+    (Level1 == NiveldaSala1).
 
 game([]) ->
     receive
 	{join_game,Username,PlayerPid} ->
+            io:format("adiciona ao game ~p~n", [Username]),
             game([[[{PlayerPid,Username}],login:player_level(Username)]])
     end;
 
 game([[Participants,NiveldaSala]|Salas]) ->
 
     Game = self(),
-    if 
-        ((length(Participants) > 1) and (length(Participants) < 4)) ->
-            Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end)
+    Size = length(Participants),
+    case ((Size>1) and (Size < 4)) of
+        true ->
+            Timer = spawn(fun() -> receive after 5000 -> Game ! {timeout}, io:format("Timeout~n") end end);
+        false ->
+            Timer = 0
     end,
         
     receive
@@ -47,11 +61,13 @@ game([[Participants,NiveldaSala]|Salas]) ->
 
 			    game(Salas);
 		        _ when (ParticipantsLen > 1) and (ParticipantsLen < 4) ->
-			    exit(Timer, kill),
-			    game([[PlayerPid | Participants], NiveldaSala]);
+                if (Timer /= 0) ->
+    			    exit(Timer, kill);
+                    true -> ok
+                end,
+			    game(Salas ++ [[[{PlayerPid, Username} | Participants], NiveldaSala]]);
 			1 ->
-			    WithNewPlayer = addToSala({PlayerPid, Username}, Participants),
-			    game([[WithNewPlayer | Participants], NiveldaSala])
+			    game(Salas ++ [[[{PlayerPid, Username} | Participants], NiveldaSala]])
 		    end;
 		false ->
 		    case length(Salas) of
@@ -63,32 +79,25 @@ game([[Participants,NiveldaSala]|Salas]) ->
 		    end
 	    end;
 	{timeout} ->
+            io:format("TimeoutRecebido~n"), 
             ParticipantsMap = through_players(Participants),
+            io:format("TimeoutParticipants~n"), 
             Planets = generate_planets(randomNumRange(2,5)),
+            io:format("TimeoutPlanets~n"), 
             
             ?MODULE ! {match,ParticipantsMap,Planets},
             ?MODULE ! {add_match,[ParticipantsMap,Planets]},
 	        
+            io:format("Timeout~p~n", [ParticipantsMap]), 
             spawn(fun() -> initMatch(ParticipantsMap,Planets) end),
 	        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
                                    
             game(Salas)
-    end;
-
-
-game([]) ->
-
-    receive
-        {join_game,Username,PlayerPid} ->
-            game([[[{PlayerPid,Username}],login:player_level(Username)]])
     end.
 
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
-    receive
-        {match,Participants,Planets} ->
-            [Participants,Planets]
-    end.
+    "ok".
 
 matchesOccurring(Matches) ->
     NewMatches =
@@ -120,8 +129,9 @@ getPid(Value) ->
 
 
 initMatch(Players, Planets) ->
-    TestRemaining = length(maps:keys(maps:filter(true,Players))),
-    TestWinner    = length(maps:keys(maps:filter(true,Planets))),
+    FilterFun = fun(_Key, _Value) -> true end,
+    TestRemaining = length(maps:keys(maps:filter(FilterFun, Players))),
+    TestWinner    = length(maps:keys(maps:filter(FilterFun, Planets))),
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value  <- Values],
     if (TestRemaining == 0) -> ?MODULE ! {remove, [Players, Planets]}
@@ -191,9 +201,15 @@ randomNumRange(Small,Big) ->
     rand:uniform(Big - Small + 1) + Small - 1.
 
 generate_planets(Int) -> 
+    io:format("PlanetaInt~n"), 
     Sistema = #{0 => {0,960,540,35,255,255,0}}, % here comes the sun
     generate_planets(Int, Sistema).
+
+generate_planets(0, Sistema) ->
+    io:format("PlanetaZeroSistema~n"), 
+    Sistema;
 generate_planets(Int,Sistema) ->
+    io:format("PlanetaIntSistema~n"), 
     Distancia = Int * randomNumRange(40,100),
     % Ver se vale a pena colocar distancia sol-planeta
     SistemaNovo = Sistema#{Int => {Distancia,
@@ -205,9 +221,7 @@ generate_planets(Int,Sistema) ->
 				   randomNumRange(90,255),
 				   randomNumRange(90,255),
 				   randomNumRange(90,255)}},
-    generate_planets(Int-1,SistemaNovo);
-generate_planets(0, Sistema) ->
-    Sistema.
+    generate_planets(Int-1,SistemaNovo).
 
 newPlayerPos(Pid, Player,Map) ->
     X0 = randomNumRange(300,1600),

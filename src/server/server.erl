@@ -31,9 +31,14 @@ parser(Msg, Pid) ->
         "login" ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
-        "join" -> case lists:member(hd(Cdr), login:online()) of
-                      true -> game:join_game(Pid,hd(Cdr));
-                      false -> "ok"
+        "join" -> 
+            ElemBin = list_to_binary(hd(Cdr)),
+            Elem_str = << "\"", ElemBin/binary, "\"" >>,
+            case lists:member(Elem_str, login:online()) of
+                      true -> 
+                          io:format("join no server~p~n", [Pid]),
+                          game:join_game(Pid,hd(Cdr));
+                      false -> "invalid"
                   end;
         "leaderboard" -> 
             ok;
@@ -80,6 +85,7 @@ user(Sock, Room) ->
             user(Sock,Room);
         {tcp, _, Data} ->
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
+            io:format("mensagem:~p~n", [Msg]),
             Player ! {line,list_to_binary([parser(Msg,self())])},
             user(Sock,Room);
         {tcp_closed, _} ->
@@ -88,8 +94,11 @@ user(Sock, Room) ->
             Room ! {leave, self()};
         {update_data, Match} ->
             JsonMatch = jsx:encode(Match),
-	    io:format("~p~n", [Match]),
+            io:format("~p~n", [Match]),
             BinaryJsonMatch = list_to_binary(JsonMatch),
             gen_tcp:send(Sock, BinaryJsonMatch),
+            user(Sock, Room);
+        {match,Participants,Planets} ->
+            self() ! {update_data, [Participants,Planets]},
             user(Sock, Room)
     end.
