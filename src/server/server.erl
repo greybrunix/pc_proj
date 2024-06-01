@@ -32,7 +32,7 @@ parser(Msg, Pid) ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
-                      true -> game:join_game(Pid);
+                      true -> game:join_game(Pid,hd(Cdr));
                       false -> "ok"
                   end;
         "leaderboard" -> 
