@@ -5,8 +5,8 @@
 	login/2,
 	logout/1,
 	online/0,
-    player_level/1]).
-
+    player_level/1,
+    all_offline/0]).
 
 start() ->
     Map = read_json_from_file(),
@@ -22,7 +22,7 @@ login(User,Passwd) -> rpc({login,User, Passwd}).
 logout(User) -> rpc({logout, User}).
 online() -> rpc(online).
 player_level(User) -> rpc({player_level, User}).
-
+all_offline() -> rpc(all_offline).
 
 loop(State) ->
 	receive
@@ -122,7 +122,19 @@ handle({player_level, User}, Map) ->
             {Level, Map};
         error ->
             {invalid}
-    end.
+    end;
+
+handle(all_offline, Map) ->
+    NewMap = maps:fold(
+        fun(Key, UserData, Acc) ->
+            UpdatedUserData = maps:put(<<"online">>, <<"false">>, UserData),
+            maps:put(Key, UpdatedUserData, Acc)
+        end,
+        Map,
+        Map
+    ),
+    write_json_to_file(NewMap),
+    {ok, NewMap}.
 
 write_json_to_file(Map) ->
     Json = jsx:encode(Map),
