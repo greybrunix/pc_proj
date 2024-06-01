@@ -1,9 +1,9 @@
 -module(game).
 -export([start/0,
-	     join_game/1,
-	     del_game/0,
-	     stop_game/0,
-         match/1
+	 join_game/1,
+	 del_game/0,
+	 stop_game/0,
+	 get_matches/0
         ]).
 
 
@@ -63,6 +63,7 @@ game(PlayersPids) ->
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
+	
     end.
 
 keyPressed(Key, PlayerPid) -> ok.
@@ -72,6 +73,12 @@ del_game() ->
 	ok.
 stop_game() ->
 	ok.
+
+get_matches() ->
+    ?MODULE ! {request_matches}, % Completar onde vai receber isto
+    receive
+	{Matches} -> ok % Completar isto
+    end.
 
 %-----------------------------MATCH------------------------------
 initMatch(Participants,Planets,PlayersPids) ->

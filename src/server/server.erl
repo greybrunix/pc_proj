@@ -16,9 +16,9 @@ acceptor(LSock, Room) ->
     {ok, Sock} = gen_tcp:accept(LSock),
     spawn(fun() -> acceptor(LSock, Room) end),
     Room ! {enter, self()},
-    user(Sock, Room, 0).
+    user(Sock, Room).
 
-parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
+parser(Msg, Pid) ->
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
@@ -43,16 +43,10 @@ parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
             T = login:logout(hd(Cdr)),
             game:stop_game(),
             io_lib:format("~p~n", [T]);
+        "key" -> 
+            game:keyPressed(hd(Cdr),lists:last(Cdr)) % TODO verificar se já esta numa partida
         _ ->
             io_lib:format("~p~n", [no_command])
-    end.
-
-parser(Msg, Pid, MatchPid) -> 
-    Words = string:split(Msg, " ", all),
-    [Car|Cdr] = Words,
-    case Car of
-        "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr))
     end.
 
 room(Pids) ->
@@ -65,7 +59,7 @@ room(Pids) ->
             room(Pids -- [{Pid,""}])
     end.
 
-user(Sock, Room, MatchPid) ->
+user(Sock, Room) ->
     Player = self(),
     receive
         {in_match,Match,Party} ->
@@ -87,8 +81,8 @@ user(Sock, Room, MatchPid) ->
             user(Sock,Room,MatchPid);
         {tcp, _, Data} ->
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
-            Player ! {line,list_to_binary([parser(Msg,self(),MatchPid)])},
-            user(Sock,Room,MatchPid);
+            Player ! {line,list_to_binary([parser(Msg,self())])},
+            user(Sock,Room);
         {tcp_closed, _} ->
             Room ! {leave, self()};
         {tcp_error, _, _} ->
