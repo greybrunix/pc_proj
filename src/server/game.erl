@@ -8,7 +8,7 @@
 
 
 start() ->
-	spawn(fun() -> game([],[]) end).
+	spawn(fun() -> game([]) end).
 
 
 game(PlayersPids) when length(PlayersPids) < 2 ->
