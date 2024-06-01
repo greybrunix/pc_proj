@@ -86,7 +86,6 @@ initMatch(Participants,Planets,PlayersPids) ->
         has_winner -> 
             [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids]
         all_lost -> 
-            PlayersPids = maps:keys(Participants), 
             [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids]
         
     end.
