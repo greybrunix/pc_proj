@@ -144,12 +144,14 @@ generate_planets(Int,Sistema) ->
     Distancia = Int * randomNumRange(40,100),
     % Ver se vale a pena colocar distancia sol-planeta
     SistemaNovo = Sistema#{Int => {Distancia,
-				randomNumRange(300,1600),
-				randomNumRange(200,850),
-				randomNumRange(4,20),
-				randomNumRange(90,255),
-				randomNumRange(90,255),
-				randomNumRange(90,255)}},
+				   randomNumRange(300,1600),
+				   randomNumRange(200,850),
+				   randomNumRange(50,100),
+				   randomNumRange(20,80),
+				   randomNumRange(4,20),
+				   randomNumRange(90,255),
+				   randomNumRange(90,255),
+				   randomNumRange(90,255)}},
     generate_planets(Int-1,SistemaNovo).
 
 newPlayerPos(Player,Map) ->
@@ -192,6 +194,25 @@ updatePlanetsPos(Planets, 0) ->
     Planets;
 updatePlanetsPos(Planets,NumPlanet) ->
 %TODO calculos dos planetas por tick
-    updatePlanetsPos(Planets,NumPlanet-1).
+    {Dist, X0, Y0, Vx0, Vy0, Diameter, R, G, B} = maps:get(Planets, NumPlanet),
+    V = math:sqrt(Vx0*Vx0 + Vy0*Vy0),
+    Ac = V*V/Dist,
+    Theta = math:atan2(X0, Y0),
+    Ax = -Ac * math:cos(Theta),
+    Ay = -Ac * math:sin(Theta),
+    X = X0 + Vx0*0.0021 + Ax*0.0021*0.0021/2,
+    Y = Y0 + Vy0*0.0021 + Ay*0.0021*0.0021/2,
+    Vx = Vx0 + Ax*0.0021,
+    Vy = Vy0 + Ay*0.0021,
+    NewPlanet = {Dist,
+		 X,
+		 Y,
+		 Vx,
+		 Vy,
+		 Diameter,
+		 R,G,B
+		},
+    NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
+    updatePlanetsPos(NewPlanets,NumPlanet-1).
 
 
