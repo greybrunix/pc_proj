@@ -15,7 +15,7 @@ game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 			NivelPlayer = login:player_level(Username),
 			if
 			    (((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
-				game([PlayerPid | PlayersPids],NiveldaSala);
+				game([[PlayerPid,Username] | PlayersPids],NiveldaSala);
 			    true -> 
 				game([[PlayerPid,Username] | PlayersPids],login:player_level(Username))
 
@@ -34,7 +34,7 @@ game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(Playe
             Planets = generate_planets(randomNumRange(2,5)),
 
 	    spawn(fun() -> initMatch(Participants,Planets) end),
-	    [ PlayerPid ! {in_match, Participants, Planets} || [PlayerPid | _] <- PlayersPids],
+	    [ PlayerPid ! {in_match, [Participants, Planets]} || [PlayerPid | _] <- PlayersPids],
 
             game([],0);
 
@@ -196,11 +196,14 @@ newPlayerPos(Pid, Player,Map) ->
 			     false,true,false, Pid}},
     MapNew.
 
-through_players([[Pid, Username] | T]) ->
+
+through_players([]) ->
+    #{};
+through_players([[Pid | [Username|[]]] | T]) ->
     Map = newPlayerPos(Pid,Username,#{}),
     through_players(T,Map).
 
-through_players([[Pid, Username] | T],Map) ->
+through_players([[Pid | [Username|[]]] | T],Map) ->
     MapNew = newPlayerPos(Pid,Username,Map),
     through_players(T,MapNew);
 

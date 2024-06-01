@@ -6,7 +6,7 @@ stop(Server) -> Server ! stop.
 
 server(Port) ->
     login:start(),
-    %game:start(),
+    game:start(),
     {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
     Room = spawn(fun() -> room({}) end),
     spawn(fun() -> acceptor(LSock, Room) end),
@@ -60,8 +60,9 @@ room(Pids) ->
 user(Sock, Room) ->
     Player = self(),
     receive
-        {in_match,Match,Party} ->
-            self() ! {line,"starting match...\n"};
+        {in_match,Match} ->
+            io_lib:format("EI CAPUTA ~p~n", [Match]),
+	    self() ! {update_data,Match};
             %TODO ver como guardar Partidas
         {matchover,Reason,Pid,Participants} ->
             case Reason of
