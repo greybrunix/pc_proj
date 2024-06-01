@@ -1,4 +1,4 @@
--module(process).
+-module(server).
 -export([start/1, stop/1]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
@@ -18,7 +18,7 @@ acceptor(LSock, Room) ->
     Room ! {enter, self()},
     user(Sock, Room, 0).
 
-parser(Msg, Pid) ->
+parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
