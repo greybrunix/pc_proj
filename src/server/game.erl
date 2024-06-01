@@ -101,7 +101,6 @@ handle({"UP", Pid},PlayersInfo) ->
      LineLength,LineEndX,LineEndY,TargetAngle,
      EasingAngle,R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
-
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
