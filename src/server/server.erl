@@ -1,5 +1,5 @@
--module(process).
--export([parser/2]).
+-module(server).
+-export([start/1, stop/1]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
 stop(Server) -> Server ! stop.
@@ -34,13 +34,9 @@ parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
-                    true -> game:join_game(Pid);
+                    true -> game:join_game(Pid,hd(Cdr));
                     false -> "ok"
                 end;
-        "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr));
-            %TODO como 
-            
 
         "leaderboard" -> 
             ok;
@@ -97,7 +93,8 @@ user(Sock, Room, MatchPid) ->
             user(Sock,Room,MatchPid);
         {tcp, _, Data} ->
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
-            Player ! {line,list_to_binary([parser(Msg,self(),MatchPid)])}
+            {Coisas,NewMatchOrNot} = parser(Msg,self(),MatchPid), 
+            Player ! {line,list_to_binary({Coisas,NewMatchOrNot})},
             user(Sock,Room,MatchPid);
         {tcp_closed, _} ->
             Room ! {leave, self()};
