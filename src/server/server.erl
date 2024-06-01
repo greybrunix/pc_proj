@@ -6,7 +6,7 @@ stop(Server) -> Server ! stop.
 
 server(Port) ->
     login:start(),
-    game:start(),
+    %game:start(), ATENÇÂO AQUI QUE NÃO ESTÁ COM O GAME
     {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
     Room = spawn(fun() -> room({}) end),
     spawn(fun() -> acceptor(LSock, Room) end),
@@ -26,8 +26,7 @@ parser(Msg, Pid) ->
             T = login:create_account(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "delete" ->
-            T = login:close_account(hd(Cdr), tl(Cdr)),
-            game:del_game(),
+            T = login:close_account(hd(Cdr)),
             io_lib:format("~p~n", [T]);
         "login" ->
             T = login:login(hd(Cdr), tl(Cdr)),
@@ -41,10 +40,9 @@ parser(Msg, Pid) ->
 
         "logout" ->
             T = login:logout(hd(Cdr)),
-            game:stop_game(),
             io_lib:format("~p~n", [T]);
         "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr)) % TODO verificar se já esta numa partida
+            game:keyPressed(hd(Cdr),lists:last(Cdr)); % TODO verificar se já esta numa partida
         _ ->
             io_lib:format("~p~n", [no_command])
     end.
@@ -78,7 +76,7 @@ user(Sock, Room) ->
 
         {line, Data} ->
             gen_tcp:send(Sock, Data),
-            user(Sock,Room,MatchPid);
+            user(Sock,Room);
         {tcp, _, Data} ->
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
             Player ! {line,list_to_binary([parser(Msg,self())])},
