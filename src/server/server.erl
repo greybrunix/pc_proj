@@ -1,4 +1,4 @@
--module(server).
+-module(process).
 -export([start/1, stop/1]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
@@ -91,8 +91,7 @@ user(Sock, Room, MatchPid) ->
             user(Sock,Room,MatchPid);
         {tcp, _, Data} ->
             [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
-            {Coisas,NewMatchOrNot} = parser(Msg,self(),MatchPid), 
-            Player ! {line,list_to_binary({Coisas,NewMatchOrNot})},
+            Player ! {line,list_to_binary([parser(Msg,self(),MatchPid)])},
             user(Sock,Room,MatchPid);
         {tcp_closed, _} ->
             Room ! {leave, self()};
