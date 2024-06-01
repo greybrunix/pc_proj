@@ -67,15 +67,16 @@ stop_game() ->
 %-----------------------------MATCH------------------------------
 initMatch(Participants,Planets,PlayersPids) ->
         
-    Match = spawn(fun() -> newMatchInstance(Participants,Planets) end),
-
+    Match = spawn(fun() -> newMatchInstance(Participants,Planets,PlayersPids) end),
+    
+	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
     spawn(fun() -> receive after 90000 -> Match ! timeover end end),
 
     timer:send_interval(21, Match, {tick}),
     
     receive
         has_winner -> 
-            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids]
+            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         all_lost -> 
             [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids]
         

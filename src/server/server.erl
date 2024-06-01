@@ -18,7 +18,8 @@ acceptor(LSock, Room) ->
     Room ! {enter, self()},
     user(Sock, Room).
 
-process(Msg, Pid) ->
+
+process(Msg, Pid, MatchPid) where MatchPid == -1 ->
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
@@ -36,11 +37,6 @@ process(Msg, Pid) ->
                       true -> game:join_game(Pid);
                       false -> "ok"
                   end;
-        "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr));
-            %TODO como 
-            
-
         "leaderboard" -> 
             ok;
 
@@ -50,6 +46,11 @@ process(Msg, Pid) ->
             io_lib:format("~p~n", [T]);
         _ ->
             io_lib:format("~p~n", [no_command])% boomer
+
+process(Msg, Pid, MatchPid) ->
+        "key" -> 
+            game:keyPressed(hd(Cdr),lists:last(Cdr));
+            %TODO como 
     end.
 
 room(Pids) ->
