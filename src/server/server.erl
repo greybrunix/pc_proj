@@ -50,11 +50,11 @@ parser(Msg, Pid) ->
 room(Pids) ->
     receive
         {enter, Pid} ->
-            io:format("user_entered~p~n", [{Pid, ""}]),
-            room([{Pid,""} | Pids]);
+            io:format("user_entered~p~n", [Pid]),
+            room([Pid | Pids]);
         {leave, Pid} ->
             io:format("user_left~p~n", [Pid]),
-            room(lists:delete({Pid, ""}, Pids))
+            room(lists:delete(Pid, Pids))
     end.
 
 user(Sock, Room) ->
