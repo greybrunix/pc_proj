@@ -11,14 +11,25 @@ start() ->
 	spawn(fun() -> game([]) end).
 
 
-game(PlayersPids) when length(PlayersPids) < 2 ->
+game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 	receive
-		{join_game,PlayerPid} ->
-            ?MODULE ! {start},
-			game([PlayerPid | PlayersPids])
+		{join_game,Username,PlayerPid} ->
+            case length(PlayersPids) > 0 of
+                true -> 
+                    NivelPlayer = login:player_level(Username),
+                    case NivelPlayer+1 == NiveldaSala or NivelPlayer-1 == NiveldaSala of
+                        true -> 
+                            game([PlayerPid | PlayersPids],NiveldaSala)
+                        false ->
+                            game([PlayerPid],NivelPlayer)
+
+                false->
+			        game([PlayerPid | PlayersPids],login:player_level(Username))
+
+            end,
 	end;
 
-game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
+game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
 	Game = self(),
 	Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
 	receive
@@ -30,12 +41,11 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
 			Match = spawn(fun() -> initMatch(Participants,Planets) end),
 			[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
 			
-            game([]);
+            game([],0);
 
-		{join_game,PlayerPid} ->
+		{join_game,Username,PlayerPid} ->
             exit(Timer,kill),
-            ?MODULE ! {start},
-			game([PlayerPid | PlayersPids])
+			game([PlayerPid | PlayersPids],NiveldaSala)
             
 	end;
 
@@ -50,10 +60,9 @@ game(PlayersPids) ->
 
 % FIXME corrEct API usagE in TCP sErvEr
 
-join_game(PlayerPid) ->
-    ?MODULE ! {join_game, PlayerPid},
+join_game(PlayerPid,Username) ->
+    ?MODULE ! {join_game,Username,PlayerPid},
     receive
-        {start} -> "You Joined"
     end.
 
 keyPressed(Key, PlayerPid) -> ok.
