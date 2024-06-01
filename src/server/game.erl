@@ -44,8 +44,7 @@ game(PlayersPids) ->
     Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
 
-	Match = spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
-	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+	spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
 	
     game([]).
 
@@ -68,23 +67,22 @@ stop_game() ->
 %-----------------------------MATCH------------------------------
 initMatch(Participants,Planets,PlayersPids) ->
         
-    Match = spawn(fun() -> newMatchInstance(Participants,Planets) end),
-
+    Match = spawn(fun() -> newMatchInstance(Participants,Planets,PlayersPids) end),
+    
+	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
     spawn(fun() -> receive after 90000 -> Match ! timeover end),
 
     timer:send_interval(21, Match, {tick}),
     
     receive
-        has_winner ->
-            PlayersPids = maps:keys(Participants), 
-            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
+        has_winner -> 
+            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids]
         all_lost -> 
-            PlayersPids = maps:keys(Participants), 
-            [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids];
+            [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids]
         
     end.
 
-newMatchInstance(Participants,Planets) ->
+newMatchInstance(Participants,Planets,PlayersPids) ->
 
     receive 
         {tick} -> ok;
@@ -94,7 +92,6 @@ newMatchInstance(Participants,Planets) ->
 
         
         timeover ->
-            PlayersPids = maps:keys(Participants), 
             [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids]
     end.
 
