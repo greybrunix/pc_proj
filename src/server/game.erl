@@ -1,6 +1,6 @@
 -module(game).
 -export([start/0,
-	 join_game/1,
+	 join_game/2,
 	 del_game/0,
 	 stop_game/0,
 	 get_matches/0
@@ -28,24 +28,24 @@ game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 	end;
 
 game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
-	Game = self(),
-	Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
-	receive
-		timeout ->
+    Game = self(),
+    Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
+    receive
+	timeout ->
             
             Participants = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
 
-			Match = spawn(fun() -> initMatch(Participants,Planets) end),
-			[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+	    Match = spawn(fun() -> initMatch(Participants,Planets, PlayersPids) end),
+	    [ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
 			
             game([],0);
 
-		{join_game,Username,PlayerPid} ->
+	{join_game,Username,PlayerPid} ->
             exit(Timer,kill),
-			game([PlayerPid | PlayersPids],NiveldaSala)
+	    game([PlayerPid | PlayersPids],NiveldaSala)
             
-	end.
+    end.
 
 game(PlayersPids) ->
     
@@ -98,7 +98,7 @@ initMatch(Participants,Planets,PlayersPids) ->
 newMatchInstance(Participants,Planets,PlayersPids, Handler) ->
 
     receive 
-        {tick} -> updatePlanetsPos(Planets, len(maps:keys(Planets)));
+        {tick} -> updatePlanetsPos(Planets, lists:len(maps:keys(Planets)));
             % aqui aplicar calculo tendo em conta  gravidade
 
         {pressed,Key} -> ok;
