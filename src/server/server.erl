@@ -84,5 +84,9 @@ user(Sock, Room) ->
         {tcp_closed, _} ->
             Room ! {leave, self()};
         {tcp_error, _, _} ->
-            Room ! {leave, self()}
+            Room ! {leave, self()};
+        {update_data, Match} ->
+            JsonMatch = jsx:encode(Match),
+            gen_tcp:send(Sock, JsonMatch),
+            user(Sock, Room)
     end.
