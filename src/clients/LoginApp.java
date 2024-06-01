@@ -138,31 +138,35 @@ public class LoginApp {
             isTypingPassword = true;
         } else if (parent.mouseX >= buttonX && parent.mouseX <= buttonX + buttonWidth &&
                 parent.mouseY >= buttonY && parent.mouseY <= buttonY + buttonHeight) {
-            String res = Interface.loginUser(userInput, passwordInput); // TODO check if login was a success and change page to game
-            if (res.equals("ok")) {
-                parent.setup();
-                Interface.loginMenu = false;
-                Interface.gameOrLeaderboardMenu = true;
-                Interface.username = userInput;
+            if (!userInput.equals("") && !userInput.equals("")) {
+                String res = Interface.loginUser(userInput, passwordInput);
+                if (res.equals("ok")) {
+                    parent.setup();
+                    Interface.loginMenu = false;
+                    Interface.gameOrLeaderboardMenu = true;
+                    Interface.username = userInput;
+                }
+                userInput = "";
+                passwordInput = "";
+                isTypingUsername = false;
+                isTypingPassword = false;
             }
-            userInput = "";
-            passwordInput = "";
-            isTypingUsername = false;
-            isTypingPassword = false;
         } else if (parent.mouseX >= buttonX && parent.mouseX <= buttonX + buttonWidth + 110 &&
                 parent.mouseY >= buttonY && parent.mouseY <= buttonY + buttonHeight + 50) {
-            String res = Interface.createUser(userInput, passwordInput); // TODO check if login was a success and change page to game
-            if (res.equals("ok")) {
-                Interface.loginMenu = false;
-                Interface.gameOrLeaderboardMenu = true;
-                Interface.username = userInput;
-                System.out.println();
-                parent.setup();
+            if (!userInput.equals("") && !userInput.equals("")) {
+                String res = Interface.createUser(userInput, passwordInput);
+                if (res.equals("ok")) {
+                    Interface.loginMenu = false;
+                    Interface.gameOrLeaderboardMenu = true;
+                    Interface.username = userInput;
+                    System.out.println();
+                    parent.setup();
+                }
+                userInput = "";
+                passwordInput = "";
+                isTypingUsername = false;
+                isTypingPassword = false;
             }
-            userInput = "";
-            passwordInput = "";
-            isTypingUsername = false;
-            isTypingPassword = false;
         } else {
             isTypingUsername = false;
             isTypingPassword = false;
