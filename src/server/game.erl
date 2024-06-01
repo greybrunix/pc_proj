@@ -1,12 +1,12 @@
 -module(game).
--export([start/0j,
+-export([start/0,
 	 join_game/2,
 	 key_pressed/2,
 	 get_matches/0
         ]).
 
 start() ->
-	register(memory, spawn(fun() -> matchesOccurring([])),
+	register(memory, spawn(fun() -> matchesOccurring([]) end)),
 	register(?MODULE, spawn(fun() -> game([]) end)).
 
 verifyPlayerLevel(Level, [[_|_], NiveldaSala]) ->
@@ -103,7 +103,7 @@ matchesOccurring(Matches) ->
     NewMatches =
         receive
             {request_matches, From} -> 
-                From ! {Matches},
+                From ! {response, Matches, memory},
                 Matches;
             {add_match, Match} -> 
                 [Match | Matches];
@@ -114,10 +114,9 @@ matchesOccurring(Matches) ->
 
 
 get_matches() ->
-    TO = whereis(matchesOccurring),
-    TO ! {request_matches, self()}, % Completar onde vai receber isto
+    memory ! {request_matches, self()}, % Completar onde vai receber isto
     receive
-        {Matches} -> Matches % Completar isto
+        {response, Matches, memory} -> Matches % Completar isto
     end.
 key_pressed(Key, Username) -> ok.
     
@@ -131,9 +130,17 @@ getPid(Value) ->
 
 
 initMatch(Players, Planets) ->
-    FilterFun = fun(_Key, _Value) -> true end,
-    TestRemaining = length(maps:keys(maps:filter(FilterFun, Players))),
-    TestWinner    = length(maps:keys(maps:filter(FilterFun, Planets))),
+    IsPlayerWinner = fun(_Key, Value) ->
+			   {_, _, _, _, _, _, _, _, _, _, _, InGame, GameOver} = Value,
+			   GameOver and InGame
+		   end,
+    
+    IsPlayerInGame = fun(_Key, Value) ->
+			     {_, _, _, _, _, _, _, _, _, _, _, InGame, _} = Value,
+			     InGame
+		     end,
+    TestRemaining = length(maps:keys(maps:filter(IsPlayerWinner, Players))),
+    TestWinner    = length(maps:keys(maps:filter(IsPlayerInGame, Planets))),
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value  <- Values],
     if (TestRemaining == 0 orelse (TestWinner == 1)) -> ?MODULE ! {remove, [Players, Planets]}
