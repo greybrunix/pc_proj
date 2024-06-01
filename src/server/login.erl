@@ -35,11 +35,11 @@ loop(State) ->
 handle({create_account, User, Passwd}, Map) ->
     UserBin = list_to_binary(User),
     PasswdBin = list_to_binary(Passwd),
-    case maps:is_key(<<UserBin/binary>>, Map) of
+    UserKey = << "\"", UserBin/binary, "\"" >>,
+    case maps:is_key(UserKey, Map) of
         false ->
-            User_str = << "\"", UserBin/binary, "\"" >>,
             Passwd_str = << "\"", PasswdBin/binary, "\"" >>,
-            NewMap = Map#{User_str => #{<<"Passwd">> => Passwd_str, <<"online">> => <<"true">>, <<"level">> => <<"0">>, <<"wins">> => <<"0">>, <<"losses">> => <<"0">>}},
+            NewMap = Map#{UserKey => #{<<"Passwd">> => Passwd_str, <<"online">> => <<"true">>, <<"level">> => <<"0">>, <<"wins">> => <<"0">>, <<"losses">> => <<"0">>}},
             write_json_to_file(NewMap),
             {ok, NewMap};
         true ->
