@@ -87,6 +87,7 @@ user(Sock, Room) ->
             Room ! {leave, self()};
         {update_data, Match} ->
             JsonMatch = jsx:encode(Match),
-            gen_tcp:send(Sock, JsonMatch),
+            BinaryJsonMatch = list_to_binary(JsonMatch),
+            gen_tcp:send(Sock, BinaryJsonMatch),
             user(Sock, Room)
     end.
