@@ -78,7 +78,7 @@ public class GameOrLeaderboard {
                 deleteAccountButtonY + (float) deleteAccountButtonHeight / 2);
     }
 
-    public void mousePressed() {
+    public void mousePressed() throws IOException {
         if (parent.mouseX >= gameButtonX && parent.mouseX <= gameButtonX + gameButtonWidth &&
                 parent.mouseY >= gameButtonY && parent.mouseY <= gameButtonY + gameButtonHeight) {
             Interface.gameOrLeaderboardMenu = false;
@@ -91,18 +91,22 @@ public class GameOrLeaderboard {
             parent.setup();
         } else if (parent.mouseX >= logoutButtonX && parent.mouseX <= logoutButtonX + logoutButtonWidth &&
                 parent.mouseY >= logoutButtonY && parent.mouseY <= logoutButtonY + logoutButtonHeight) {
-            Interface.logoutUser(Interface.username);
-            Interface.gameOrLeaderboardMenu = false;
-            Interface.loginMenu = true;
-            Interface.username = null;
-            parent.setup();
+            String res = Interface.logoutUser(Interface.username);
+            if (res.equals("ok")) {
+                Interface.gameOrLeaderboardMenu = false;
+                Interface.loginMenu = true;
+                Interface.username = null;
+                parent.setup();
+            }
         } else if (parent.mouseX >= deleteAccountButtonX && parent.mouseX <= deleteAccountButtonX + deleteAccountButtonWidth &&
         parent.mouseY >= deleteAccountButtonY && parent.mouseY <= deleteAccountButtonY + deleteAccountButtonWidth) {
-            Interface.deleteUser(Interface.username);
-            Interface.gameOrLeaderboardMenu = false;
-            Interface.loginMenu = true;
-            Interface.username = null;
-            parent.setup();
+            String res = Interface.deleteUser(Interface.username);
+            if (res.equals("ok")) {
+                Interface.gameOrLeaderboardMenu = false;
+                Interface.loginMenu = true;
+                Interface.username = null;
+                parent.setup();
+            }
         }
     }
 }

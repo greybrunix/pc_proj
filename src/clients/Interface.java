@@ -23,20 +23,24 @@ public class Interface extends PApplet {
         socket = s;
     }
 
-    public static void createUser(String username,String pass){
-        client_manager.send("signup " + username +" " + pass);
+    public static String createUser(String username,String pass) throws IOException {
+        client_manager.send("signup " + username + " " + pass);
+        return client_manager.receive();
     }
 
-    public static void deleteUser(String username){
+    public static String deleteUser(String username) throws IOException {
         client_manager.send("delete " + username);
+        return client_manager.receive();
     }
 
-    public static void loginUser(String username, String pass){
+    public static String loginUser(String username, String pass) throws IOException {
         client_manager.send("login " + username + " " + pass);
+        return client_manager.receive();
     }
 
-    public static void logoutUser(String username){
+    public static String logoutUser(String username) throws IOException {
         client_manager.send("logout " + username);
+        return client_manager.receive();
     }
 
     public static void wantPlay(String username){
@@ -104,10 +108,19 @@ public class Interface extends PApplet {
     }
 
     public void mousePressed() {
-        if (loginMenu)
-            loginApp.mousePressed();
+        if (loginMenu) {
+            try {
+                loginApp.mousePressed();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         else if (gameOrLeaderboardMenu) {
-            gameOrLeaderboard.mousePressed();
+            try {
+                gameOrLeaderboard.mousePressed();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

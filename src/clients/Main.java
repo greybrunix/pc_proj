@@ -19,7 +19,7 @@ public class Main {
 
         Socket socket;
         try {
-            socket = new Socket("localhost", 8080);
+            socket = new Socket("localhost", 1234);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
