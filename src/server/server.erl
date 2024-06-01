@@ -61,7 +61,7 @@ user(Sock, Room) ->
     Player = self(),
     receive
         {in_match,Match} ->
-            io_lib:format("EI CAPUTA ~p~n", [Match]),
+            io:format("EI CAPUTA ~p~n", [Match]),
 	    self() ! {update_data,Match};
             %TODO ver como guardar Partidas
         {matchover,Reason,Pid,Participants} ->
@@ -88,6 +88,7 @@ user(Sock, Room) ->
             Room ! {leave, self()};
         {update_data, Match} ->
             JsonMatch = jsx:encode(Match),
+	    io:format("~p~n", [Match]),
             BinaryJsonMatch = list_to_binary(JsonMatch),
             gen_tcp:send(Sock, BinaryJsonMatch),
             user(Sock, Room)
