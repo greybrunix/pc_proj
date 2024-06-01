@@ -1,5 +1,5 @@
--module(server).
--export([start/1, stop/1]).
+-module(process).
+-export([parser/2]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
 stop(Server) -> Server ! stop.
@@ -16,9 +16,10 @@ acceptor(LSock, Room) ->
     {ok, Sock} = gen_tcp:accept(LSock),
     spawn(fun() -> acceptor(LSock, Room) end),
     Room ! {enter, self()},
-    user(Sock, Room).
+    user(Sock, Room, 0).
 
-process(Msg, Pid) ->
+parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
+
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
@@ -33,9 +34,9 @@ process(Msg, Pid) ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
-                      true -> game:join_game(Pid);
-                      false -> "ok"
-                  end;
+                    true -> game:join_game(Pid);
+                    false -> "ok"
+                end;
         "key" -> 
             game:keyPressed(hd(Cdr),lists:last(Cdr));
             %TODO como 
@@ -52,6 +53,14 @@ process(Msg, Pid) ->
             io_lib:format("~p~n", [no_command])% boomer
     end.
 
+parser(Msg, Pid, MatchPid) -> 
+    Words = string:split(Msg, " ", all),
+    [Car|Cdr] = Words,
+    case Car of
+        "key" -> 
+            game:keyPressed(hd(Cdr),lists:last(Cdr));
+    end.
+
 room(Pids) ->
     receive
         {enter, Pid} ->
@@ -59,7 +68,6 @@ room(Pids) ->
             room([{Pid,""} | Pids]);
         {line, Data, Pid} ->
             io:format("received ~p~n", [Data]),
-            [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
             Pid ! {line, list_to_binary([process(Msg, Pid)])},
             room(Pids);
         {leave, Pid} ->
@@ -67,7 +75,8 @@ room(Pids) ->
             room(Pids -- [{Pid,""}])
     end.
 
-user(Sock, Room) ->
+user(Sock, Room, MatchPid) ->
+    Player = self(),
     receive
         {in_match,Match,Party} ->
             self() ! {line,"starting match...\n"};
@@ -85,10 +94,11 @@ user(Sock, Room) ->
 
         {line, Data} ->
             gen_tcp:send(Sock, Data),
-            user(Sock, Room);
+            user(Sock,Room,MatchPid);
         {tcp, _, Data} ->
-            Room ! {line, Data, self()},
-            user(Sock, Room);
+            [Msg | _] = string:split(string:to_lower(binary:bin_to_list(Data)), "\n"),
+            Player ! {line,list_to_binary([parser(Msg,self(),MatchPid)])}
+            user(Sock,Room,MatchPid);
         {tcp_closed, _} ->
             Room ! {leave, self()};
         {tcp_error, _, _} ->
