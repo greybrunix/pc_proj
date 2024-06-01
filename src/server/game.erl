@@ -138,7 +138,7 @@ initMatch(Players, Planets) ->
 	    NewPlayers =
 		updatePlayersPos({Planets,Players},
 				lists:len(maps:keys(Planets))),
-	    %_ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
+	    _ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
 	    [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
 	    initMatch(NewPlayers, NewPlanets)
 
@@ -300,10 +300,51 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
     updatePlayersPos({Planets,NewPlayers}, T).
 
 
+
 detectPlayerCollisions(Players, Player) ->
-    {X0, Y0, Vx0, Vy0, Diameter, Angle, R, G, B, Fuel,
-     WaitingGame, InGame_, GameOver_} = maps:get(Player, Players),
+    {X, Y, Vx0, Vy0, Diameter, Angle,
+     R, G, B, Fuel,
+     WaitingGame, InGame, GameOver} = maps:get(Player, Players),
+    
+    CollidedPlayers = lists:filter(fun({_, {PX, PY, _, _, PDiameter, _, _, _, _, _, _, _, _}}) ->
+        math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)) < (Diameter / 2 + PDiameter / 2)
+    end, maps:to_list(maps:remove(Player, Players))),
+    
+    UpdatedPlayers = lists:foldl(fun({OtherPlayer, {PX, PY, PVx0, PVy0, PDiameter, PAngle,
+                                                    PR, PG, PB, PFuel,
+                                                    PWaitingGame, PInGame, PGameOver}}, AccPlayers) ->
+						% Calculate the normal vector
+					 Nx0 = PX - X,
+					 Ny0 = PY - Y,
+					 Distance = math:sqrt(Nx0 * Nx0 + Ny0 * Ny0),
+					 Nx = Nx0 / Distance,
+					 Ny = Ny0 / Distance,
 
+						% Calculate the velocities along the normal
+					 Vn1 = Vx0 * Nx + Vy0 * Ny,
+					 Vn2 = PVx0 * Nx + PVy0 * Ny,
+					 
+						% Exchange the normal velocities
+					 Vn1New = Vn2,
+					 Vn2New = Vn1,
 
-    ok.
+						% Calculate the new velocities
+					 Vx1New = Vx0 + (Vn1New - Vn1) * Nx,
+					 Vy1New = Vy0 + (Vn1New - Vn1) * Ny,
+					 Vx2New = PVx0 + (Vn2New - Vn2) * Nx,
+					 Vy2New = PVy0 + (Vn2New - Vn2) * Ny,
 
+						% Update both players
+					 NewPlayer = {X, Y, Vx1New, Vy1New, Diameter, Angle,
+						      R, G, B, Fuel,
+						      WaitingGame, InGame, GameOver},
+					 NewOtherPlayer = {PX, PY, Vx2New, Vy2New, PDiameter, PAngle,
+							   PR, PG, PB, PFuel,
+							   PWaitingGame, PInGame, PGameOver},
+					 
+					 AccPlayers1 = maps:update(Player, NewPlayer, AccPlayers),
+					 AccPlayers2 = maps:update(OtherPlayer, NewOtherPlayer, AccPlayers1),
+					 AccPlayers2
+				 end, Players, CollidedPlayers),
+
+    UpdatedPlayers.
