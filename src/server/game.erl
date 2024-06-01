@@ -63,16 +63,16 @@ game([[Participants,NiveldaSala]|Salas]) ->
 		    end
 	    end;
 	{timeout} ->
-            ParticipantsMap = through_players(PlayersPids),
+            ParticipantsMap = through_players(Participants),
             Planets = generate_planets(randomNumRange(2,5)),
             
-            ?MODULE ! {match,Participants,Planets},
-            ?MODULE ! {add_match,[Participants,Planets]},
+            ?MODULE ! {match,ParticipantsMap,Planets},
+            ?MODULE ! {add_match,[ParticipantsMap,Planets]},
 	        
             spawn(fun() -> initMatch(ParticipantsMap,Planets) end),
 	        [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
                                    
-            game(Salas ++ [Participants,NivelSala])
+            game(Salas)
     end;
 
 
@@ -138,6 +138,7 @@ initMatch(Players, Planets) ->
 	    NewPlayers =
 		updatePlayersPos({Planets,Players},
 				lists:len(maps:keys(Planets))),
+	    %_ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
 	    [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
 	    initMatch(NewPlayers, NewPlanets)
 
@@ -297,4 +298,12 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
 		 InGame,GameOver},
     NewPlayers = maps:update(Player, NewPlayer, Players),
     updatePlayersPos({Planets,NewPlayers}, T).
+
+
+detectPlayerCollisions(Players, Player) ->
+    {X0, Y0, Vx0, Vy0, Diameter, Angle, R, G, B, Fuel,
+     WaitingGame, InGame_, GameOver_} = maps:get(Player, Players),
+
+
+    ok.
 
