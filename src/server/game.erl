@@ -38,8 +38,8 @@ game([[Participants,NiveldaSala]|Salas]) ->
 			    ParticipantsMap = through_players(Participants),
 			    Planets = generate_planets(randomNumRange(2, 5)),
 
-			    self() ! {match, ParticipantsMap, Planets},
-			    self() ! {add_match, [ParticipantsMap, Planets]},
+			    ?MODULE ! {match, ParticipantsMap, Planets},
+			    ?MODULE ! {add_match, [ParticipantsMap, Planets]},
 
 			    spawn(fun() -> initMatch(ParticipantsMap, Planets) end),
 
