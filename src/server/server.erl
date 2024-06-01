@@ -18,8 +18,7 @@ acceptor(LSock, Room) ->
     Room ! {enter, self()},
     user(Sock, Room, 0).
 
-parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
-
+parser(Msg, Pid) ->
     Words = string:split(Msg, " ", all),
     [Car|Cdr] = Words,
     case Car of
@@ -34,10 +33,9 @@ parser(Msg, Pid, MatchPid) when MatchPid == 0 ->
             T = login:login(hd(Cdr), tl(Cdr)),
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
-                    true -> game:join_game(Pid,hd(Cdr));
-                    false -> "ok"
-                end;
-
+                      true -> game:join_game(Pid);
+                      false -> "ok"
+                  end;
         "leaderboard" -> 
             ok;
 
@@ -54,7 +52,7 @@ parser(Msg, Pid, MatchPid) ->
     [Car|Cdr] = Words,
     case Car of
         "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr));
+            game:keyPressed(hd(Cdr),lists:last(Cdr))
     end.
 
 room(Pids) ->
