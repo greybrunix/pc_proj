@@ -82,6 +82,13 @@ game([[Participants,NiveldaSala]|Salas]) ->
     end;
 
 
+game([]) ->
+
+    receive
+        {join_game,Username,PlayerPid} ->
+            game([[[{PlayerPid,Username}],login:player_level(Username)]])
+    end.
+
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
@@ -147,28 +154,37 @@ handle({"UP", Pid},PlayersInfo) ->
     {X,Y,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver, Pid}= maps:get(Pid,PlayersInfo),
-
-    NewInfo = 0,
+    Vx = Vx0 + 0.5 * math:cos((Angle * math:pi()) / 180), % Apply linear acceleration over Angle direction
+    Vy = Vy0 + 0.5 * math:sin((Angle * math:pi()) / 180), % Apply linear acceleration over Angle direction
+    NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
+	       R,G,B,Fuel,WaitingGame,InGame,GameOver},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
 
 handle({"LEFT", Pid},PlayersInfo) ->
-    {X,Y,Vx0, Vy0,Diameter,Angle,
+    {X,Y,Vx0, Vy0,Diameter,Angle0,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
-
-    NewInfo = 0,
+    Angle = (Angle0 + 10) rem 360,
+    Vx = Vx0 * math:cos((Angle * math:pi()) / 180) - Vy0 * math:sin((Angle * math:pi()) / 180),
+    Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
+    NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
+	       R,G,B,Fuel,WaitingGame,InGame,GameOver},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
 
 handle({"RIGHT", Pid},PlayersInfo) ->
-    {X,Y,Vx0, Vy0, Diameter,Angle,
+    {X,Y,Vx0, Vy0, Diameter,Angle0,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+    Angle = (Angle0 - 10) rem 360, % Compute new angle in clockwise direction
+    Vx = Vx0 * math:cos((Angle * math:pi()) / 180) - Vy0 * math:sin((Angle * math:pi()) / 180),
+    Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
 
-    NewInfo = 0,
+    NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
+	       R,G,B,Fuel,WaitingGame,InGame,GameOver},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
 
     {ok,NextPlayers}.
@@ -222,13 +238,11 @@ newPlayerPos(Pid, Player,Map) ->
     MapNew.
 
 
-through_players([]) ->
-    #{};
-through_players([[Pid | [Username|[]]] | T]) ->
+through_players([{Pid, Username} | T]) ->
     Map = newPlayerPos(Pid,Username,#{}),
     through_players(T,Map).
 
-through_players([[Pid | [Username|[]]] | T],Map) ->
+through_players([{Pid, Username} | T],Map) ->
     MapNew = newPlayerPos(Pid,Username,Map),
     through_players(T,MapNew);
 
@@ -261,12 +275,16 @@ updatePlanetsPos(Planets,NumPlanet) ->
     NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
     updatePlanetsPos(NewPlanets,NumPlanet-1).
 
+updatePlayersPos(Players, []) ->
+    Players.
 updatePlayerPos(Players, [Player | T]) ->
     {X0,Y0, Vx0, Vy0, Diameter, Angle, R,G,B,Fuel,
      WaitingGame,InGame,GameOver} = maps:get(Player, Players),
-    
-    NewPlayer = {X0,Y0,Vx0, Vy0, Diameter,Angle,
-
+    X = X0 + Vx0*0.0021,
+    Y = Y0 + Vy0*0.0021,
+    Vx = Vx0,
+    Vy = Vy0,
+    NewPlayer = {X,Y,Vx, Vy, Diameter,Angle,
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver},
     NewPlayers = maps:update(Player, NewPlayer, Players),
