@@ -112,7 +112,7 @@ initMatch(Players, Planets) ->
 	    NewPlayers =
 		updatePlayerPos(Players,
 				lists:len(maps:keys(Planets))),
-	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids],
+	    [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
 	    initMatch(NewPlayers, NewPlanets)
 
     end.
