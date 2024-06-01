@@ -1,8 +1,6 @@
 -module(game).
 -export([start/0,
 	 join_game/2,
-	 del_game/0,
-	 stop_game/0,
 	 get_matches/0
         ]).
 
@@ -71,17 +69,17 @@ join_game(PlayerPid,Username) ->
     end.
 
 matchesOccurring(Matches) ->
-    receive
-        {request_matches} -> 
-            ?MODULE ! {Matches},
-        {add_match,Match} -> 
-            New = [Match | Matches]),
-        {remove,Match} -> 
-            New = lists:delete(Match,Matches)
-    end,
-
-    matchesOccurring(New).
-
+    NewMatches =
+        receive
+            {request_matches} -> 
+                ?MODULE ! {Matches},
+                Matches;
+            {add_match, Match} -> 
+                [Match | Matches];
+            {remove, Match} -> 
+                lists:delete(Match, Matches)
+        end,
+    matchesOccurring(NewMatches).
 
 get_matches() ->
     ?MODULE ! {request_matches}, % Completar onde vai receber isto
@@ -240,5 +238,3 @@ updatePlanetsPos(Planets,NumPlanet) ->
 		},
     NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
     updatePlanetsPos(NewPlanets,NumPlanet-1).
-
-
