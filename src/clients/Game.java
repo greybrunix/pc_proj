@@ -58,6 +58,8 @@ public class Game {
                                 planets = gameData.planets;
                                 players = gameData.players;
                             }
+                            me.game = true;
+                            me.waitingGame = false;
                         } catch (JsonProcessingException e) {
                             throw new RuntimeException(e);
                         }
@@ -108,9 +110,6 @@ public class Game {
         Interface.wantPlay(username);
         me.username = username;
         me.waitingGame = true;
-        //me.waitingGame = false;
-        //me.game = true;
         receiveData();
-        // TODO Block while number players is not enough
     }
 }
