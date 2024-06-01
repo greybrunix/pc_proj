@@ -2,8 +2,7 @@
 -export([start/0,
 	     join_game/1,
 	     del_game/0,
-	     stop_game/0,
-         match/1
+	     stop_game/0
         ]).
 
 
@@ -24,18 +23,18 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
 	receive
 		timeout ->
             
-            Participants = through_players(PlayersPids),
-            Planets = generate_planets(randomNumRange(2,5)),
+		Participants = through_players(PlayersPids),
+		Planets = generate_planets(randomNumRange(2,5)),
 
-			Match = spawn(fun() -> initMatch(Participants,Planets) end),
-			[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+		Match = spawn(fun() -> initMatch(Participants,Planets, PlayersPids) end),
+		[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
 			
-            game([]);
+		game([]);
 
-		{join_game,PlayerPid} ->
-            exit(Timer,kill),
-            ?MODULE ! {start},
-			game([PlayerPid | PlayersPids])
+	    {join_game,PlayerPid} ->
+		exit(Timer,kill),
+		?MODULE ! {start},
+		game([PlayerPid | PlayersPids])
             
 	end;
 
@@ -44,7 +43,7 @@ game(PlayersPids) ->
     Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
 
-	spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
+    spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
 	
     game([]).
 
@@ -53,7 +52,7 @@ game(PlayersPids) ->
 join_game(PlayerPid) ->
     ?MODULE ! {join_game, PlayerPid},
     receive
-        {start} -> "You Joined"
+        {start} -> joined
     end.
 
 keyPressed(Key, PlayerPid) -> ok.
@@ -69,14 +68,14 @@ initMatch(Participants,Planets,PlayersPids) ->
         
     Match = spawn(fun() -> newMatchInstance(Participants,Planets,PlayersPids) end),
     
-	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
-    spawn(fun() -> receive after 90000 -> Match ! timeover end),
+    [ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+    spawn(fun() -> receive after 90000 -> Match ! timeover end end),
 
     timer:send_interval(21, Match, {tick}),
     
     receive
         has_winner -> 
-            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids]
+            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         all_lost -> 
             [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids]
         
@@ -128,48 +127,45 @@ handle({"RIGHT", Pid},PlayersInfo) ->
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
 
-    {ok,NextPlayers};
+    {ok,NextPlayers}.
 
 
 %-----------------------FUNCOES AUXILIARES----------------------
 randomNumRange(Small,Big) ->
-    random:uniform(Big - Small + 1) + Small - 1.
+    rand:uniform(Big - Small + 1) + Small - 1.
 
-generate_planets(Int, Sistema) -> 
-    Sistema = Map#{0 => {0,960,540,35,255,255,0}}, % here comes the sun
-    generate_planets(Int, Sistema);
+generate_planets(Int) -> 
+    Sistema = #{0 => {0,960,540,35,255,255,0}}, % here comes the sun
+    generate_planets(Int, Sistema).
 
+generate_planets(0, Sistema) ->
+    Sistema;
 generate_planets(Int,Sistema) ->
-    case Int of ->
-         0 ->
-            Sistema;
-         _ -> 
-            Distancia = Int * randomNumRange(40,100),
-            % Ver se vale a pena colocar distancia sol-planeta
-            Sistema = maps:put(Int,{Distancia,
-                                    randomNumRange(300,1600),
-                                    randomNumRange(200,850),
-                                    randomNumRange(4,20),
-                                    randomNumRange(90,255),
-                                    randomNumRange(90,255),
-                                    randomNumRange(90,255)}),
-            generate_planets(Int-1,Sistema);
-    end.
+    Distancia = Int * randomNumRange(40,100),
+    % Ver se vale a pena colocar distancia sol-planeta
+    SistemaNovo = Sistema#{Int => {Distancia,
+				randomNumRange(300,1600),
+				randomNumRange(200,850),
+				randomNumRange(4,20),
+				randomNumRange(90,255),
+				randomNumRange(90,255),
+				randomNumRange(90,255)}},
+    generate_planets(Int-1,SistemaNovo).
 
 newPlayerPos(Player,Map) ->
-    X = randomNumRange(300,1600),
-    Y = randomNumRange(200,850),
+    X_0 = randomNumRange(300,1600),
+    Y_0 = randomNumRange(200,850),
     if
-        X >= 960 -> X = 1750;
-        X < 960 -> X = 150;
+        X_0 >= 960 -> X = 1750;
+        X_0 < 960 -> X = 150
     end,
 
     if
-        Y >= 540 -> Y = 900;
-        Y < 540 -> Y = 100;
+        Y_0 >= 540 -> Y = 900;
+        Y_0 < 540 -> Y = 100
     end,
 
-    Map = maps:put(Player,{X,Y,5,
+    MapNew = Map#{Player => {X,Y,5,
                            X,Y,0,
                            15,X+math:cos(0) * 15,Y+math:sin(0) * 15,
                            0,0.2,
@@ -178,34 +174,24 @@ newPlayerPos(Player,Map) ->
                            randomNumRange(90,255),
                            100,
                            false,true,false
-                          }
-                   Map),
-    Map.
+			    }},
+    MapNew.
 
-through_players(List, Map) ->
-    Map = maps:new(),
-    Map = newPlayerPos(hd(List),Map),
-    through_players(tl(List),Map);
+through_players([H | T]) ->
+    Map = newPlayerPos(H,#{}),
+    through_players(T,Map).
 
-through_players(List,Map) when length(List) > 0 ->    
-    Map = newPlayerPos(hd(List),Map),
-    through_players(tl(List),Map);
+through_players([ H | T ],Map) ->    
+    MapNew = newPlayerPos(H,Map),
+    through_players(T,MapNew);
 
 through_players([],Map) -> 
     Map.
 
+updatePlanetsPos(Planets, 0) ->
+    Planets;
 updatePlanetsPos(Planets,NumPlanet) ->
-
-    case NumPlanet>0 of
-
-        false ->
-            %TODO calculos dos planetas por tick
-
-            updatePlanetsPos(Planets,NumPlanet-1);
-
-        true -> Planets;
-
-    end.
-
+%TODO calculos dos planetas por tick
+    updatePlanetsPos(Planets,NumPlanet-1).
 
 

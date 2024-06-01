@@ -49,7 +49,7 @@ process(Msg, Pid) ->
             game:stop_game(),
             io_lib:format("~p~n", [T]);
         _ ->
-            io_lib:format("~p~n", [no_command])% boomer
+            io_lib:format("~p~n", [no_command])
     end.
 
 room(Pids) ->
