@@ -14,19 +14,17 @@ start() ->
 game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 	receive
 		{join_game,Username,PlayerPid} ->
-            case length(PlayersPids) > 0 of
-                true -> 
-                    NivelPlayer = login:player_level(Username),
-                    case NivelPlayer+1 == NiveldaSala or NivelPlayer-1 == NiveldaSala of
-                        true -> 
-                            game([PlayerPid | PlayersPids],NiveldaSala)
-                        false ->
-                            game([PlayerPid],NivelPlayer)
+		case length(PlayersPids) > 0 of
+		    true -> 
+			NivelPlayer = login:player_level(Username),
+			if 
+			    (((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
+				game([PlayerPid | PlayersPids],NiveldaSala);
+			    true -> 
+				game([PlayerPid | PlayersPids],login:player_level(Username))
 
-                false->
-			        game([PlayerPid | PlayersPids],login:player_level(Username))
-
-            end,
+			end
+		end
 	end;
 
 game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
@@ -47,7 +45,7 @@ game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(Playe
             exit(Timer,kill),
 			game([PlayerPid | PlayersPids],NiveldaSala)
             
-	end;
+	end.
 
 game(PlayersPids) ->
     
@@ -63,7 +61,7 @@ game(PlayersPids) ->
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
-	
+	_ -> ok
     end.
 
 keyPressed(Key, PlayerPid) -> ok.
@@ -77,13 +75,13 @@ stop_game() ->
 get_matches() ->
     ?MODULE ! {request_matches}, % Completar onde vai receber isto
     receive
-	{Matches} -> ok % Completar isto
+	{Matches} -> Matches % Completar isto
     end.
 
 %-----------------------------MATCH------------------------------
 initMatch(Participants,Planets,PlayersPids) ->
-        
-    Match = spawn(fun() -> newMatchInstance(Participants,Planets,PlayersPids) end),
+    MatchHandler = self(),
+    Match = spawn(fun() -> newMatchInstance(Participants,Planets,PlayersPids, MatchHandler) end),
     
 	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
     spawn(fun() -> receive after 90000 -> Match ! timeover end end),
@@ -95,13 +93,12 @@ initMatch(Participants,Planets,PlayersPids) ->
             [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         all_lost -> 
             [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids]
-        
     end.
 
-newMatchInstance(Participants,Planets,PlayersPids) ->
+newMatchInstance(Participants,Planets,PlayersPids, Handler) ->
 
     receive 
-        {tick} -> ok;
+        {tick} -> updatePlanetsPos(Planets, len(maps:keys(Planets)));
             % aqui aplicar calculo tendo em conta  gravidade
 
         {pressed,Key} -> ok;
@@ -143,7 +140,7 @@ handle({"RIGHT", Pid},PlayersInfo) ->
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
 
-    {ok,NextPlayers};
+    {ok,NextPlayers}.
 
 
 %-----------------------FUNCOES AUXILIARES----------------------
@@ -151,41 +148,39 @@ randomNumRange(Small,Big) ->
     % É preciso fazer seed no incio
     rand:uniform(Big - Small + 1) + Small - 1.
 
-generate_planets(Int, Sistema) -> 
+generate_planets(Int) -> 
     Sistema = #{0 => {0,960,540,35,255,255,0}}, % here comes the sun
-    generate_planets(Int, Sistema);
-
+    generate_planets(Int, Sistema).
 generate_planets(Int,Sistema) ->
-    case Int of
-         0 ->
-            Sistema;
-         _ -> 
-            Distancia = Int * randomNumRange(40,100),
-            % Ver se vale a pena colocar distancia sol-planeta
-            Sistema = maps:put(Int,{Distancia,
-                                    randomNumRange(300,1600),
-                                    randomNumRange(200,850),
-                                    randomNumRange(4,20),
-                                    randomNumRange(90,255),
-                                    randomNumRange(90,255),
-                                    randomNumRange(90,255)}, Sistema),
-            generate_planets(Int-1,Sistema)
-    end.
+    Distancia = Int * randomNumRange(40,100),
+    % Ver se vale a pena colocar distancia sol-planeta
+    SistemaNovo = Sistema#{Int => {Distancia,
+				   randomNumRange(300,1600),
+				   randomNumRange(200,850),
+				   randomNumRange(50,100),
+				   randomNumRange(20,80),
+				   randomNumRange(4,20),
+				   randomNumRange(90,255),
+				   randomNumRange(90,255),
+				   randomNumRange(90,255)}},
+    generate_planets(Int-1,SistemaNovo);
+generate_planets(0, Sistema) ->
+    Sistema.
 
 newPlayerPos(Player,Map) ->
-    X = randomNumRange(300,1600),
-    Y = randomNumRange(200,850),
+    X0 = randomNumRange(300,1600),
+    Y0 = randomNumRange(200,850),
     if
-        X >= 960 -> X = 1750;
-        X < 960 -> X = 150
+        X0 >= 960 -> X = 1750;
+        X0 < 960 -> X = 150
     end,
 
     if
-        Y >= 540 -> Y = 900;
-        Y < 540 -> Y = 100
+        Y0 >= 540 -> Y = 900;
+        Y0 < 540 -> Y = 100
     end,
 
-    Map = maps:put(Player,{X,Y,5,
+    MapNew = maps:put(Player,{X,Y,5,
                            X,Y,0,
                            15,X+math:cos(0) * 15,Y+math:sin(0) * 15,
                            0,0.2,
@@ -195,32 +190,42 @@ newPlayerPos(Player,Map) ->
                            100,
                            false,true,false},
                    Map),
-    Map.
+    MapNew.
 
-through_players(List, Map) ->
-    Map = maps:new(),
-    Map = newPlayerPos(hd(List),Map),
-    through_players(tl(List),Map);
+through_players(List) ->
+    Map = newPlayerPos(hd(List),#{}),
+    through_players(tl(List),Map).
 
-through_players(List,Map) when length(List) > 0 ->    
-    Map = newPlayerPos(hd(List),Map),
-    through_players(tl(List),Map);
+through_players(List,Map) ->    
+    MapNew = newPlayerPos(hd(List),Map),
+    through_players(tl(List),MapNew);
 
 through_players([],Map) -> 
     Map.
 
+updatePlanetsPos(Planets, 0) ->
+    Planets;
 updatePlanetsPos(Planets,NumPlanet) ->
-
-    case NumPlanet>0 of
-
-        false ->
-            %TODO calculos dos planetas por tick
-
-            updatePlanetsPos(Planets,NumPlanet-1);
-
-        true -> Planets
-
-    end.
-
+%TODO calculos dos planetas por tick
+    {Dist, X0, Y0, Vx0, Vy0, Diameter, R, G, B} = maps:get(Planets, NumPlanet),
+    V = math:sqrt(Vx0*Vx0 + Vy0*Vy0),
+    Ac = V*V/Dist,
+    Theta = math:atan2(X0, Y0),
+    Ax = -Ac * math:cos(Theta),
+    Ay = -Ac * math:sin(Theta),
+    X = X0 + Vx0*0.0021 + Ax*0.0021*0.0021/2,
+    Y = Y0 + Vy0*0.0021 + Ay*0.0021*0.0021/2,
+    Vx = Vx0 + Ax*0.0021,
+    Vy = Vy0 + Ay*0.0021,
+    NewPlanet = {Dist,
+		 X,
+		 Y,
+		 Vx,
+		 Vy,
+		 Diameter,
+		 R,G,B
+		},
+    NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
+    updatePlanetsPos(NewPlanets,NumPlanet-1).
 
 
