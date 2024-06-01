@@ -16,8 +16,9 @@ game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 			if
 			    (((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
 				game([PlayerPid | PlayersPids],NiveldaSala);
-			    true ->
-				game([PlayerPid | PlayersPids],login:player_level(Username))
+			    true -> 
+				game([[PlayerPid,Username] | PlayersPids],login:player_level(Username))
+
 
 			end
 		end
@@ -32,15 +33,15 @@ game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(Playe
             Participants = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
 
-	    Match = spawn(fun() -> initMatch(Participants,Planets) end),
-	    [ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
+	    spawn(fun() -> initMatch(Participants,Planets) end),
+	    [ PlayerPid ! {in_match, Participants, Planets} || [PlayerPid | _] <- PlayersPids],
 
             game([],0);
 
 	{join_game,Username,PlayerPid} ->
             exit(Timer,kill),
-	    game([PlayerPid | PlayersPids],NiveldaSala)
 
+	    game([[PlayerPid,Username] | PlayersPids],NiveldaSala)
     end.
 
 game(PlayersPids) ->
@@ -53,10 +54,8 @@ game(PlayersPids) ->
 
 
     spawn(fun() -> initMatch(Participants,Planets) end),
-    
-    game([]).
 
-% FIXME corrEct API usagE in TCP sErvEr
+    game([]).
 
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
@@ -78,6 +77,7 @@ matchesOccurring(Matches) ->
         end,
     matchesOccurring(NewMatches).
 
+
 get_matches() ->
     ?MODULE ! {request_matches}, % Completar onde vai receber isto
     receive
@@ -85,40 +85,52 @@ get_matches() ->
     end.
 
 %-----------------------------MATCH------------------------------
+
+getPid(Value) ->
+    {_,_,_,_,
+     _,_,_,_,
+     _,_,_,Pid}= Value,
+    Pid.
+
+
 initMatch(Players, Planets) ->
     TestRemaining = length(maps:keys(maps:filter(true,Players))),
     TestWinner    = length(maps:keys(maps:filter(true,Planets))),
+    Values = maps:values(Players),
+    Pids = [getPid(Value) || Value  <- Values],
     if (TestRemaining == 0) -> ?MODULE ! {remove, [Players, Planets]}
     end,
     if
-    (TestRemaining == 0) and (TestWinner == 1) ->
-        ok; % One Won
-    (TestRemaining == 0) ->
-        ok; % all lost
-    true ->
-        NewPlanets =
-        updatePlanetsPos(Planets,
-                 lists:len(maps:keys(Planets))),
-        NewPlayers =
-        updatePlayerPos(Players,
-                lists:len(maps:keys(Planets))),
-        initMatch(NewPlayers, NewPlanets)
+	(TestRemaining == 0) and (TestWinner == 1) ->
+	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+	(TestRemaining == 0) ->
+	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+	true ->
+	    NewPlanets =
+		updatePlanetsPos(Planets,
+				 lists:len(maps:keys(Planets))),
+	    NewPlayers =
+		updatePlayerPos(Players,
+				lists:len(maps:keys(Planets))),
+	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids],
+	    initMatch(NewPlayers, NewPlanets)
+
     end.
 
 %----------------------------HANDLES----------------------------
 handle({"UP", Pid},PlayersInfo) ->
-    {X,Y,Diameter,Angle,
+    {X,Y,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
-     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+     WaitingGame,InGame,GameOver, Pid}= maps:get(Pid,PlayersInfo),
+
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
 
 handle({"LEFT", Pid},PlayersInfo) ->
-    {X,Y,Diameter,TargetX,TargetY,Angle,
-     LineLength,LineEndX,LineEndY,TargetAngle,
-     EasingAngle,R,G,B,Fuel,
+    {X,Y,Vx0, Vy0,Diameter,Angle,
+     R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
     NewInfo = 0,
@@ -127,9 +139,8 @@ handle({"LEFT", Pid},PlayersInfo) ->
     {ok,NextPlayers};
 
 handle({"RIGHT", Pid},PlayersInfo) ->
-    {X,Y,Diameter,TargetX,TargetY,Angle,
-     LineLength,LineEndX,LineEndY,TargetAngle,
-     EasingAngle,R,G,B,Fuel,
+    {X,Y,Vx0, Vy0, Diameter,Angle,
+     R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
     NewInfo = 0,
@@ -223,11 +234,13 @@ updatePlanetsPos(Planets,NumPlanet) ->
     updatePlanetsPos(NewPlanets,NumPlanet-1).
 
 updatePlayerPos(Players, [Player | T]) ->
-    {X,Y,Diameter, Angle, R,G,B,Fuel,
+    {X0,Y0, Vx0, Vy0, Diameter, Angle, R,G,B,Fuel,
      WaitingGame,InGame,GameOver} = maps:get(Player, Players),
     
-    NewPlayer = {X,Y,Diameter,Angle,
+    NewPlayer = {X0,Y0,Vx0, Vy0, Diameter,Angle,
+
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver},
     NewPlayers = maps:update(Player, NewPlayer, Players),
     updatePlayerPos(NewPlayers, T).
+
