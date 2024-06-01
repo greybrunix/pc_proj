@@ -6,7 +6,7 @@ stop(Server) -> Server ! stop.
 
 server(Port) ->
     login:start(),
-    %game:start(), ATENÇÂO AQUI QUE NÃO ESTÁ COM O GAME
+    %game:start(),
     {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
     Room = spawn(fun() -> room({}) end),
     spawn(fun() -> acceptor(LSock, Room) end),
@@ -54,7 +54,7 @@ room(Pids) ->
             room([{Pid,""} | Pids]);
         {leave, Pid} ->
             io:format("user_left~p~n", [Pid]),
-            room(Pids -- [{Pid,""}])
+            room(lists:delete({Pid, ""}, Pids))
     end.
 
 user(Sock, Room) ->
