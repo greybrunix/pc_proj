@@ -4,21 +4,19 @@
 	 get_matches/0
         ]).
 
-
 start() ->
 	spawn(fun() -> game([]) end).
-
 
 game(PlayersPids,NiveldaSala) when length(PlayersPids) < 2 ->
 	receive
 		{join_game,Username,PlayerPid} ->
 		case length(PlayersPids) > 0 of
-		    true -> 
+		    true ->
 			NivelPlayer = login:player_level(Username),
-			if 
+			if
 			    (((NivelPlayer + 1) == NiveldaSala) or ((NivelPlayer-1) == NiveldaSala)) ->
 				game([PlayerPid | PlayersPids],NiveldaSala);
-			    true -> 
+			    true ->
 				game([PlayerPid | PlayersPids],login:player_level(Username))
 
 			end
@@ -30,19 +28,19 @@ game(PlayersPids,NiveldaSala) when ((length(PlayersPids) >= 2) and (length(Playe
     Timer = spawn(fun() -> receive after 5000 -> Game ! timeout end end),
     receive
 	timeout ->
-            
+
             Participants = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
 
-	    Match = spawn(fun() -> initMatch(Participants,Planets, PlayersPids) end),
+	    Match = spawn(fun() -> initMatch(Participants,Planets) end),
 	    [ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
-			
+
             game([],0);
 
 	{join_game,Username,PlayerPid} ->
             exit(Timer,kill),
 	    game([PlayerPid | PlayersPids],NiveldaSala)
-            
+
     end.
 
 game(PlayersPids) ->
@@ -54,8 +52,8 @@ game(PlayersPids) ->
     ?MODULE ! {add_match,[Participants,Planets]},
 
 
-	spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
-	
+    spawn(fun() -> initMatch(Participants,Planets) end),
+    
     game([]).
 
 % FIXME corrEct API usagE in TCP sErvEr
@@ -63,9 +61,7 @@ game(PlayersPids) ->
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
-        {match,Participants,Planets} ->
-            [Participants,Planets]
-
+        _ -> ok
     end.
 
 matchesOccurring(Matches) ->
@@ -84,47 +80,34 @@ matchesOccurring(Matches) ->
 get_matches() ->
     ?MODULE ! {request_matches}, % Completar onde vai receber isto
     receive
-	{Matches} -> Matches % Completar isto
+        {Matches} -> Matches % Completar isto
     end.
-
-keyPressed(Key, PlayerPid) -> ok.
 
 %-----------------------------MATCH------------------------------
-initMatch(Participants,Planets,PlayersPids) ->
-    MatchHandler = self(),
-    Match = spawn(fun() -> newMatchInstance(Participants,Planets,PlayersPids, MatchHandler) end),
-    
-	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
-    spawn(fun() -> receive after 90000 -> Match ! timeover end end),
-
-    timer:send_interval(21, Match, {tick}),
-    
-    receive
-        has_winner -> 
-            [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
-        all_lost -> 
-            [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids]
-    end.
-
-newMatchInstance(Participants,Planets,PlayersPids, Handler) ->
-
-    receive 
-        {tick} -> updatePlanetsPos(Planets, lists:len(maps:keys(Planets)));
-            % aqui aplicar calculo tendo em conta  gravidade
-
-        {pressed,Key} -> ok;
-
-        
-        timeover ->
-            [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids]
+initMatch(Players, Planets) ->
+    TestRemaining = length(maps:keys(maps:filter(true,Players))),
+    TestWinner    = length(maps:keys(maps:filter(true,Planets))),
+    if (TestRemaining == 0) -> ?MODULE ! {remove, [Players, Planets]}
+    end,
+    if
+    (TestRemaining == 0) and (TestWinner == 1) ->
+        ok; % One Won
+    (TestRemaining == 0) ->
+        ok; % all lost
+    true ->
+        NewPlanets =
+        updatePlanetsPos(Planets,
+                 lists:len(maps:keys(Planets))),
+        NewPlayers =
+        updatePlayerPos(Players,
+                lists:len(maps:keys(Planets))),
+        initMatch(NewPlayers, NewPlanets)
     end.
 
 %----------------------------HANDLES----------------------------
-
 handle({"UP", Pid},PlayersInfo) ->
-    {X,Y,Diameter,TargetX,TargetY,Angle,
-     LineLength,LineEndX,LineEndY,TargetAngle,
-     EasingAngle,R,G,B,Fuel,
+    {X,Y,Diameter,Angle,
+     R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
@@ -178,7 +161,7 @@ generate_planets(Int,Sistema) ->
 generate_planets(0, Sistema) ->
     Sistema.
 
-newPlayerPos(Player,Map) ->
+newPlayerPos(Pid, Player,Map) ->
     X0 = randomNumRange(300,1600),
     Y0 = randomNumRange(200,850),
     if
@@ -191,25 +174,23 @@ newPlayerPos(Player,Map) ->
         Y0 < 540 -> Y = 100
     end,
 
-    MapNew = maps:put(Player,{X,Y,5,
-                           X,Y,0,
-                           15,X+math:cos(0) * 15,Y+math:sin(0) * 15,
-                           0,0.2,
-                           randomNumRange(90,255),
-                           randomNumRange(90,255),
-                           randomNumRange(90,255),
-                           100,
-                           false,true,false},
-                   Map),
+    MapNew = Map#{Player => {X,Y,5,
+			     0,0,
+			     0,
+			     randomNumRange(90,255),
+			     randomNumRange(90,255),
+			     randomNumRange(90,255),
+			     100,
+			     false,true,false, Pid}},
     MapNew.
 
-through_players(List) ->
-    Map = newPlayerPos(hd(List),#{}),
-    through_players(tl(List),Map).
+through_players([[Pid, Username] | T]) ->
+    Map = newPlayerPos(Pid,Username,#{}),
+    through_players(T,Map).
 
-through_players(List,Map) ->    
-    MapNew = newPlayerPos(hd(List),Map),
-    through_players(tl(List),MapNew);
+through_players([[Pid, Username] | T],Map) ->
+    MapNew = newPlayerPos(Pid,Username,Map),
+    through_players(T,MapNew);
 
 through_players([],Map) -> 
     Map.
@@ -218,7 +199,8 @@ updatePlanetsPos(Planets, 0) ->
     Planets;
 updatePlanetsPos(Planets,NumPlanet) ->
 %TODO calculos dos planetas por tick
-    {Dist, X0, Y0, Vx0, Vy0, Diameter, R, G, B} = maps:get(Planets, NumPlanet),
+    {Dist, X0, Y0, Vx0, Vy0, Diameter, R, G, B} =
+	maps:get(Planets, NumPlanet),
     V = math:sqrt(Vx0*Vx0 + Vy0*Vy0),
     Ac = V*V/Dist,
     Theta = math:atan2(X0, Y0),
@@ -238,3 +220,13 @@ updatePlanetsPos(Planets,NumPlanet) ->
 		},
     NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
     updatePlanetsPos(NewPlanets,NumPlanet-1).
+
+updatePlayerPos(Players, [Player | T]) ->
+    {X,Y,Diameter, Angle, R,G,B,Fuel,
+     WaitingGame,InGame,GameOver} = maps:get(Player, Players),
+    
+    NewPlayer = {X,Y,Diameter,Angle,
+		 R,G,B,Fuel,WaitingGame,
+		 InGame,GameOver},
+    NewPlayers = maps:update(Player, NewPlayer, Players),
+    updatePlayerPos(NewPlayers, T).
