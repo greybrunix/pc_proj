@@ -61,7 +61,8 @@ game(PlayersPids) ->
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
-        _ -> ok
+        {match,Participants,Planets} ->
+            [Participants,Planets]
     end.
 
 matchesOccurring(Matches) ->
