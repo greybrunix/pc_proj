@@ -34,10 +34,10 @@ process(Msg, Pid) ->
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
                       true -> game:join_game(Pid);
-                      false -> "ok"
+                      false -> "ok";
                   end;
         "key" -> 
-            game:keyPressed(hd(Cdr),Pid),
+            game:keyPressed(hd(Cdr),lists:last(Cdr)),
             %TODO como 
             
 
@@ -68,7 +68,8 @@ room(Pids) ->
 
 user(Sock, Room) ->
     receive
-        {in_match,Match,Party} -> 
+        {in_match,Match,Party} ->
+            self() ! {line,"starting match...\n"}
             %TODO ver como guardar Partidas
         {matchover,Reason,Pid,Participants} ->
             case Reason of

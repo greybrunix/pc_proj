@@ -8,22 +8,14 @@
 
 
 start() ->
-	spawn(fun() -> game([]) end).
+	spawn(fun() -> game([],[]) end).
 
-
-loop(PlayersInfo,PlanetsInfo) ->
-	receive
-		{Request, From} ->
-			{Result, NextPlayers} = handle(Request,PlayersInfo),
-			From ! {Result, ?MODULE},
-			loop(NextPlayers,NextPlanets);
-	end.
 
 game(PlayersPids) when length(PlayersPids) < 2 ->
 	receive
-		{join_game, UserPid} ->
+		{join_game,PlayerPid} ->
             ?MODULE ! {start},
-			game([UserPid | PlayersPids]);
+			game([PlayerPid | PlayersPids]);
 	end;
 
 game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
@@ -35,12 +27,12 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
             Participants = through_players(PlayersPids),
             Planets = generate_planets(randomNumRange(2,5)),
 
-			Match = spawn(fun() -> match(Participants,Planets) end),
+			Match = spawn(fun() -> initMatch(Participants,Planets) end),
 			[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
 			
             game([]);
 
-		{join_game, PlayerPid} ->
+		{join_game,PlayerPid} ->
             exit(Timer,kill),
             ?MODULE ! {start},
 			game([PlayerPid | PlayersPids]);
@@ -52,7 +44,7 @@ game(PlayersPids) ->
     Participants = through_players(PlayersPids),
     Planets = generate_planets(randomNumRange(2,5)),
 
-	Match = spawn(fun() -> match(Participants,Planets) end),
+	Match = spawn(fun() -> initMatch(Participants,Planets,PlayersPids) end),
 	[ PlayerPid ! {in_match,Match,PlayersPids} || PlayerPid <- PlayersPids],
 	
     game([]).
@@ -62,52 +54,49 @@ game(PlayersPids) ->
 join_game(PlayerPid) ->
     ?MODULE ! {join_game, PlayerPid},
     receive
-        {start} -> "You Joined" 
-    end;
+        {start} -> "You Joined"; 
+    end.
 
-keyPressed(Key, PlayerPid) ->
-    Request = {Key,PlayerPid},
-    ?MODULE ! {Request, self()},
-    receive
-        {Result,?MODULE} -> Result;     
-    end;
+keyPressed(Key, PlayerPid) -> ok.
 
+    
 del_game() ->
 	ok.
 stop_game() ->
 	ok.
 
 %-----------------------------MATCH------------------------------
-match(Participants,Planets) ->
-    
-    spawn(fun() -> loop(Participants,Planets) end),
-    Match = self(),
+initMatch(Participants,Planets,PlayersPids) ->
+        
+    Match = spawn(fun() -> newMatchInstance(Participants,Planets) end),
+
     spawn(fun() -> receive after 90000 -> Match ! timeover),
-    Tickrate = spawn(fun() -> receive after 40 -> Match ! tickover),
+
+    timer:send_interval(21, Match, {tick}),
+    
     receive
-        {pressed,Key,Player} ->
-            exit(Tickrate,kill),
-            {Result,NextParticipants} = keyPressed(Key,Player);
-
-        tickover -> 
-
         has_winner ->
             PlayersPids = maps:keys(Participants), 
             [PlayerPid ! {matchover,has_winner,PlayerPid,Participants} || PlayerPid <- PlayersPids];
         all_lost -> 
             PlayersPids = maps:keys(Participants), 
             [PlayerPid ! {matchover,all_lost,PlayerPid,Participants} || PlayerPid <- PlayersPids];
+        
+    end.
+
+newMatchInstance(Participants,Planets) ->
+
+    receive 
+        {tick} -> ok;
+            % aqui aplicar calculo tendo em conta  gravidade
+
+        {pressed,Key,} -> ok;
+
+        
         timeover ->
             PlayersPids = maps:keys(Participants), 
             [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids];
-        
-    end;
-    
-    NextPlanets = updatePlanetsPos(Planets),
-    %TODO verificar o estado da partida, para ver se acabou com ou sem vencedor
-	match(NextParticipants,Planets).
-
-
+    end.
 
 %----------------------------HANDLES----------------------------
 
@@ -117,7 +106,7 @@ handle({"UP", Pid},PlayersInfo) ->
      EasingAngle,R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
-    NewInfo = ,
+    NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
@@ -128,7 +117,7 @@ handle({"LEFT", Pid},PlayersInfo) ->
      EasingAngle,R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
-    NewInfo = ,
+    NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
@@ -139,7 +128,7 @@ handle({"RIGHT", Pid},PlayersInfo) ->
      EasingAngle,R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
-    NewInfo = ,
+    NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
 
     {ok,NextPlayers};
@@ -147,7 +136,7 @@ handle({"RIGHT", Pid},PlayersInfo) ->
 
 %-----------------------FUNCOES AUXILIARES----------------------
 randomNumRange(Small,Big) ->
-    random:uniform(Big - Small + 1) + Small - 1;
+    random:uniform(Big - Small + 1) + Small - 1.
 
 generate_planets(Int) -> 
     Sistema = Map#{0 => {0,960,540,35,255,255,0}}, % here comes the sun
@@ -194,15 +183,15 @@ newPlayerPos(Player,Map) ->
                            false,true,false
                           }
                    Map),
-    Map;
+    Map.
 
 through_players(List) ->
     Map = maps:new(),
-    newPlayerPos(hd(List),Map),
+    Map = newPlayerPos(hd(List),Map),
     through_players(tl(List),Map);
 
 through_players(List,Map) when length(List) > 0 ->    
-    newPlayerPos(hd(List),Map),
+    Map = newPlayerPos(hd(List),Map),
     through_players(tl(List),Map);
 
 through_players([],Map) -> 
