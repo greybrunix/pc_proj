@@ -54,8 +54,6 @@ game(PlayersPids) ->
 	
     game([]).
 
-% FIXME corrEct API usagE in TCP sErvEr
-
 join_game(PlayerPid,Username) ->
     ?MODULE ! {join_game,Username,PlayerPid},
     receive
@@ -72,51 +70,50 @@ get_matches() ->
     end.
 
 %-----------------------------MATCH------------------------------
-initMatch(Participants,Planets) ->
+getPid(Value) ->
+    {_,_,_,_,
+     _,_,_,_,
+     _,_,_,Pid}= Value,
+    Pid.
+
+
+initMatch(Players, Planets) ->
+    TestRemaining = length(maps:keys(maps:filter(true,Players))),
+    TestWinner    = length(maps:keys(maps:filter(true,Planets))),
+    Values = maps:values(Players),
+    Pids = [getPid(Value) || Value  <- Values],
+    if (TestRemaining == 0) -> ?MODULE ! {remove, [Players, Planets]}
+    end,
     if
-	lists:len(maps:keys(maps:filter())) == 0 ->
-	    % all lost
-	    ok;
-	lists:(maps:keys(maps:filter())) > 0 ->
-	    ok;
+	(TestRemaining == 0) and (TestWinner == 1) ->
+	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+	(TestRemaining == 0) ->
+	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
 	true ->
 	    NewPlanets =
 		updatePlanetsPos(Planets,
 				 lists:len(maps:keys(Planets))),
 	    NewPlayers =
-		updatePlayerPos(Participants,
+		updatePlayerPos(Players,
 				lists:len(maps:keys(Planets))),
+	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids],
 	    initMatch(NewPlayers, NewPlanets)
-    end.
-
-
-
-
-newMatchInstance(Participants,Planets, Handler) ->
-
-
-        {pressed,Key} -> ok
-
-        
-        %timeover ->
-        %    [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids]
     end.
 
 %----------------------------HANDLES----------------------------
 
 handle({"UP", Pid},PlayersInfo) ->
-    {X,Y,Diameter,Angle,
+    {X,Y,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
-     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+     WaitingGame,InGame,GameOver, Pid}= maps:get(Pid,PlayersInfo),
     NewInfo = 0,
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
 
 handle({"LEFT", Pid},PlayersInfo) ->
-    {X,Y,Diameter,TargetX,TargetY,Angle,
-     LineLength,LineEndX,LineEndY,TargetAngle,
-     EasingAngle,R,G,B,Fuel,
+    {X,Y,Vx0, Vy0,Diameter,Angle,
+     R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
     NewInfo = 0,
@@ -125,9 +122,8 @@ handle({"LEFT", Pid},PlayersInfo) ->
     {ok,NextPlayers};
 
 handle({"RIGHT", Pid},PlayersInfo) ->
-    {X,Y,Diameter,TargetX,TargetY,Angle,
-     LineLength,LineEndX,LineEndY,TargetAngle,
-     EasingAngle,R,G,B,Fuel,
+    {X,Y,Vx0, Vy0, Diameter,Angle,
+     R,G,B,Fuel,
      WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
 
     NewInfo = 0,
@@ -221,10 +217,10 @@ updatePlanetsPos(Planets,NumPlanet) ->
     updatePlanetsPos(NewPlanets,NumPlanet-1).
 
 updatePlayerPos(Players, [Player | T]) ->
-    {X,Y,Diameter, Angle, R,G,B,Fuel,
+    {X0,Y0, Vx0, Vy0, Diameter, Angle, R,G,B,Fuel,
      WaitingGame,InGame,GameOver} = maps:get(Player, Players),
     
-    NewPlayer = {X,Y,Diameter,Angle,
+    NewPlayer = {X0,Y0,Vx0, Vy0, Diameter,Angle,
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver},
     NewPlayers = maps:update(Player, NewPlayer, Players),
