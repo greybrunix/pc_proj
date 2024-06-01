@@ -130,17 +130,15 @@ getPid(Value) ->
 
 
 initMatch(Players, Planets) ->
-    IsPlayerWinner = fun(_Key, Value) ->
-			   {_, _, _, _, _, _, _, _, _, _, _, InGame, GameOver} = Value,
-			   GameOver and InGame
-		   end,
-    
-    IsPlayerInGame = fun(_Key, Value) ->
+
+    TestRemaining = length(maps:keys(maps:filter(fun(_Key, Value) ->
 			     {_, _, _, _, _, _, _, _, _, _, _, InGame, _} = Value,
 			     InGame
-		     end,
-    TestRemaining = length(maps:keys(maps:filter(IsPlayerWinner, Players))),
-    TestWinner    = length(maps:keys(maps:filter(IsPlayerInGame, Planets))),
+		     end, Players))),
+    TestWinner    = length(maps:keys(maps:filter(fun(_Key, Value) ->
+			   {_, _, _, _, _, _, _, _, _, _, _, InGame, GameOver} = Value,
+			   GameOver and InGame
+		   end, Players))),
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value  <- Values],
     if (TestRemaining == 0 orelse (TestWinner == 1)) -> ?MODULE ! {remove, [Players, Planets]}
