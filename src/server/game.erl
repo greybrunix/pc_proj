@@ -15,7 +15,7 @@ game(PlayersPids) when length(PlayersPids) < 2 ->
 	receive
 		{join_game,PlayerPid} ->
             ?MODULE ! {start},
-			game([PlayerPid | PlayersPids]);
+			game([PlayerPid | PlayersPids])
 	end;
 
 game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)) ->
@@ -35,7 +35,7 @@ game(PlayersPids) when ((length(PlayersPids) >= 2) and (length(PlayersPids) < 4)
 		{join_game,PlayerPid} ->
             exit(Timer,kill),
             ?MODULE ! {start},
-			game([PlayerPid | PlayersPids]);
+			game([PlayerPid | PlayersPids])
             
 	end;
 
@@ -54,7 +54,7 @@ game(PlayersPids) ->
 join_game(PlayerPid) ->
     ?MODULE ! {join_game, PlayerPid},
     receive
-        {start} -> "You Joined"; 
+        {start} -> "You Joined"
     end.
 
 keyPressed(Key, PlayerPid) -> ok.
@@ -70,7 +70,7 @@ initMatch(Participants,Planets,PlayersPids) ->
         
     Match = spawn(fun() -> newMatchInstance(Participants,Planets) end),
 
-    spawn(fun() -> receive after 90000 -> Match ! timeover),
+    spawn(fun() -> receive after 90000 -> Match ! timeover end),
 
     timer:send_interval(21, Match, {tick}),
     
@@ -90,12 +90,12 @@ newMatchInstance(Participants,Planets) ->
         {tick} -> ok;
             % aqui aplicar calculo tendo em conta  gravidade
 
-        {pressed,Key,} -> ok;
+        {pressed,Key} -> ok;
 
         
         timeover ->
             PlayersPids = maps:keys(Participants), 
-            [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids];
+            [PlayerPid ! {matchover,timeover,PlayerPid,Participants} || PlayerPid <- PlayersPids]
     end.
 
 %----------------------------HANDLES----------------------------
@@ -138,7 +138,7 @@ handle({"RIGHT", Pid},PlayersInfo) ->
 randomNumRange(Small,Big) ->
     random:uniform(Big - Small + 1) + Small - 1.
 
-generate_planets(Int) -> 
+generate_planets(Int, Sistema) -> 
     Sistema = Map#{0 => {0,960,540,35,255,255,0}}, % here comes the sun
     generate_planets(Int, Sistema);
 
@@ -185,7 +185,7 @@ newPlayerPos(Player,Map) ->
                    Map),
     Map.
 
-through_players(List) ->
+through_players(List, Map) ->
     Map = maps:new(),
     Map = newPlayerPos(hd(List),Map),
     through_players(tl(List),Map);

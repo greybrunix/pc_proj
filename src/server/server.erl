@@ -34,14 +34,15 @@ process(Msg, Pid) ->
             io_lib:format("~p~n", [T]);
         "join" -> case lists:member(hd(Cdr), login:online()) of
                       true -> game:join_game(Pid);
-                      false -> "ok";
+                      false -> "ok"
                   end;
         "key" -> 
-            game:keyPressed(hd(Cdr),lists:last(Cdr)),
+            game:keyPressed(hd(Cdr),lists:last(Cdr));
             %TODO como 
             
 
         "leaderboard" -> 
+            ok;
 
         "logout" ->
             T = login:logout(hd(Cdr)),
@@ -69,13 +70,16 @@ room(Pids) ->
 user(Sock, Room) ->
     receive
         {in_match,Match,Party} ->
-            self() ! {line,"starting match...\n"}
+            self() ! {line,"starting match...\n"};
             %TODO ver como guardar Partidas
         {matchover,Reason,Pid,Participants} ->
             case Reason of
                 timeover ->
+                    ok;
                 has_winner ->
+                    ok;
                 all_lost -> 
+                    ok
                 %TODO aqui atualizar a informaçao geral do jogador
             end;
 
