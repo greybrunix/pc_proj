@@ -1,7 +1,7 @@
 -module(login).
 -export([start/0,
 	create_account/2,
-	close_account/2,
+	close_account/1,
 	login/2,
 	logout/1,
 	online/0,
@@ -17,7 +17,7 @@ rpc(Request) ->
 	receive {Result, ?MODULE} -> Result end.
 
 create_account(User, Passwd) -> rpc({create_account,User,Passwd}).
-close_account(User, Passwd) -> rpc({close_account,User,Passwd}).
+close_account(User) -> rpc({close_account,User}).
 login(User,Passwd) -> rpc({login,User, Passwd}).
 logout(User) -> rpc({logout, User}).
 online() -> rpc(online).
@@ -46,22 +46,15 @@ handle({create_account, User, Passwd}, Map) ->
             {user_exists, Map}
     end;
 
-handle({close_account, User, Passwd}, Map) ->
+handle({close_account, User}, Map) ->
     UserBin = list_to_binary(User),
-    PasswdBin = list_to_binary(Passwd),
     User_str = << "\"", UserBin/binary, "\"" >>,
-    Passwd_str = << "\"", PasswdBin/binary, "\"" >>,
     case maps:find(User_str, Map) of
-        {ok, UserData} ->
-            case maps:get(<<"Passwd">>, UserData) of
-                Passwd_str ->
-                    NewMap = maps:remove(User_str, Map),
-                    write_json_to_file(NewMap),
-                    {ok, NewMap};
-                _ ->
-                    {invalid, Map}
-            end;
-        error ->
+        {ok, _} ->
+            NewMap = maps:remove(User_str, Map),
+            write_json_to_file(NewMap),
+            {ok, NewMap};
+        _ ->
             {invalid, Map}
     end;
 
@@ -121,7 +114,7 @@ handle({player_level, User}, Map) ->
             Level = maps:get(<<"level">>, UserData),
             {Level, Map};
         error ->
-            {invalid}
+            {invalid, Map}
     end;
 
 handle(all_offline, Map) ->
@@ -145,7 +138,14 @@ write_json_to_file(Map) ->
 read_json_from_file() ->
     case file:read_file("accounts.json") of
         {ok, Binary} ->
-            jsx:decode(Binary, [return_maps]);
-        {error} ->
+            case jsx:decode(Binary, [return_maps]) of
+                {ok, Json} -> Json;
+                _ -> maps:new()
+            end;
+        {error, enoent} ->  % File does not exist
+            EmptyJson = "{}",
+            file:write_file("accounts.json", EmptyJson),
+            maps:new();
+        {error, _Reason} ->  % Some other error
             maps:new()
     end.
