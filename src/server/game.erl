@@ -130,7 +130,7 @@ keyPressed(Key,Username,[Players, Planets, Pid]) ->
 %-----------------------------MATCH------------------------------
 
 getPid(Value) ->
-    {_,_,_,_,
+    {_,_,_,_,_,_,
      _,_,_,_,
      _,_,_,_,_,Pid}= Value,
     Pid.
@@ -140,13 +140,13 @@ initMatch(Players, Planets) ->
 
     % Filter to count players who are still in the game
     TestRemaining = length(maps:keys(maps:filter(fun(_Key, Value) ->
-        {_, _, _, _, _, _, _, _, _, _, _, InGame, _,_} = Value,
+        {_, _, _, _, _, _, _, _, _, _, _, _, _, InGame, _,_} = Value,
         InGame
     end, Players))),
     
     % Filter to count players who are not GameOver and still in the game
     TestWinner = length(maps:keys(maps:filter(fun(_Key, Value) ->
-        {_, _, _, _, _, _, _, _, _, _, _, InGame, GameOver,_} = Value,
+        {_, _, _, _,  _, _, _, _, _, _, _, _, _, InGame, GameOver,_} = Value,
         InGame and not GameOver
     end, Players))),
     
@@ -267,9 +267,9 @@ newPlayerPos(Pid, Player,Map) ->
         Y0 >= 540.0 -> Y = 900.0;
         Y0 < 540.0 -> Y = 100.0
     end,
-    LineLength = 10, 
-    LineEndX = X + math:cos(0) * lineLength;
-    LineEndY = Y + math:sin(0) * lineLength;
+    LineLength = 10.0, 
+    LineEndX = X + math:cos(0) * LineLength,
+    LineEndY = Y + math:sin(0) * LineLength,
     MapNew = Map#{Player => {float(X),float(Y),float(LineEndX),float(LineEndY),0.0,
 			     0.0,5.0,
 			     0.0,
@@ -329,8 +329,8 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
     Vy = Vy0,
     
     LineLength = 10,
-    LineEndX = X + math:cos(Angle) * LineLength;
-    LineEndY = Y + math:sin(Angle) * LineLength;
+    LineEndX = X + math:cos(Angle) * LineLength,
+    LineEndY = Y + math:sin(Angle) * LineLength,
 
     PlanetsList = maps:to_list(Planets),
 
@@ -367,10 +367,10 @@ detectPlayerCollisions(Players, [ Player| T ]) ->
 detectPlayerCollisions(Players, Player, []) ->
     Players;
 detectPlayerCollisions(Players, Player, [PPlayer | T ]) ->
-    {PX, PY, PVx0, PVy0, PDiameter, PAngle,
+    {PX, PY, LineEndX, LineEndY, PVx0, PVy0, PDiameter, PAngle,
      PR, PG, PB, PFuel,
      PWaitingGame, PInGame, PGameOver, PPid} = maps:get(PPlayer, Players),
-    {X,Y,Vx0,Vy0,Diameter,Angle,
+    {X,Y, LineEndX, LineEndY, Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid} = maps:get(Player, Players),
     DistanceCenters = math:sqrt((PX-X)*(PX-X)+(PY-Y)*(PY-Y)),
     Collide = (Player /= PPlayer) andalso ((DistanceCenters =< Diameter) orelse (DistanceCenters =< PDiameter)),
