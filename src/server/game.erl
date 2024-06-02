@@ -125,7 +125,7 @@ key_pressed(Key, Username) -> ok.
 getPid(Value) ->
     {_,_,_,_,
      _,_,_,_,
-     _,_,_,,_,_,Pid}= Value,
+     _,_,_,_,_,Pid}= Value,
     Pid.
 
 
