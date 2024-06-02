@@ -33,7 +33,7 @@ parser(Msg, Pid) ->
             io_lib:format("~p~n", [T]);
         "join" -> 
             ElemBin = list_to_binary(hd(Cdr)),
-            Elem_str = << "\"", ElemBin/binary, "\"" >>,
+            Elem_str = <<ElemBin/binary>>,
             case lists:member(Elem_str, login:online()) of
                       true -> 
                           io:format("join no server~p~n", [Pid]),
@@ -72,19 +72,7 @@ user(Sock, Room) ->
     Player = self(),
     receive
         {in_match,Match} ->
-	    self() ! {update_data,Match};
-            %TODO ver como guardar Partidas
-        {matchover,Reason,Pid,Participants} ->
-            case Reason of
-                timeover ->
-                    ok;
-                has_winner ->
-                    ok;
-                all_lost -> 
-                    ok
-                %TODO aqui atualizar a informaçao geral do jogador
-            end;
-
+            self() ! {update_data,Match};
         {line, Data} ->
             gen_tcp:send(Sock, Data),
             user(Sock,Room);
