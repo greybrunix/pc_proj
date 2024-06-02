@@ -119,12 +119,14 @@ formatMatch(Match) ->
 formatMatchPlayer(Map, []) ->
     Map;
 formatMatchPlayer(Map, [Username | T]) ->
-    {X,Y,_Vx,_Vy, Diameter, Angle, R,G,B, Fuel, _, InGame, GameOver, _} =
+    {X,Y,LineEndX,LineEndY,_Vx,_Vy, Diameter, Angle, R,G,B, Fuel, _, InGame, GameOver, _} =
 	maps:get(Username, Map),
 
     NewMap0 = maps:remove(Username, Map),
     NewMap  = NewMap0#{list_to_binary(Username) => #{<<"x">> => float_to_binary(X),
 						     <<"y">> => float_to_binary(Y),
+                             <<"lineEndX">> => float_to_binary(LineEndX),
+                             <<"lineEndY">> => float_to_binary(LineEndY),
 						     <<"diameter">> => float_to_binary(Diameter),
 						     <<"angle">> => float_to_binary(Angle),
 						     <<"r">> => float_to_binary(R),
