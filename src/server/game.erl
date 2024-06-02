@@ -183,6 +183,8 @@ initMatch(Players, Planets) ->
             NewPlayers1 = 
                 detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers)),
             [Pid ! {update_data, #{"Players" => NewPlayers1, "Planets" => (NewPlanets)}} || Pid <- Pids],
+        memory ! {remove, [Players,Planets]},
+        memory ! {add_match, [NewPlayers1, NewPlanets]},
             initMatch(NewPlayers1, NewPlanets)
     end.
 %----------------------------HANDLES----------------------------
