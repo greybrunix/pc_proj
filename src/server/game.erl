@@ -267,8 +267,10 @@ newPlayerPos(Pid, Player,Map) ->
         Y0 >= 540.0 -> Y = 900.0;
         Y0 < 540.0 -> Y = 100.0
     end,
-
-    MapNew = Map#{Player => {float(X),float(Y),0.0,
+    LineLength = 10, 
+    LineEndX = X + math:cos(0) * lineLength;
+    LineEndY = Y + math:sin(0) * lineLength;
+    MapNew = Map#{Player => {float(X),float(Y),float(LineEndX),float(LineEndY),0.0,
 			     0.0,5.0,
 			     0.0,
 			     float(randomNumRange(90,255)),
@@ -319,14 +321,18 @@ updatePlanetsPos(Planets,NumPlanet) ->
 updatePlayersPos({_Planets,Players}, []) ->
     Players;
 updatePlayersPos({Planets, Players}, [Player | T]) ->
-    {X0,Y0, Vx0, Vy0, Diameter, Angle, R,G,B,Fuel,
+    {X0,Y0,_,_, Vx0, Vy0, Diameter, Angle, R,G,B,Fuel,
      WaitingGame,InGame_,GameOver_, Pid} = maps:get(Player, Players),
     X = X0 + Vx0*0.0021,
     Y = Y0 + Vy0*0.0021,
     Vx = Vx0,
     Vy = Vy0,
+    
+    LineLength = 10,
+    LineEndX = X + math:cos(Angle) * LineLength;
+    LineEndY = Y + math:sin(Angle) * LineLength;
 
-   PlanetsList = maps:to_list(Planets),
+    PlanetsList = maps:to_list(Planets),
 
     CollidingPlanets = lists:filter(fun({_, {_, PX, PY, _, _, PDiameter, _, _, _}}) ->
     Distance = math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)),
@@ -345,7 +351,7 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
             GameOver = GameOver_,
             InGame = InGame_
     end,
-    NewPlayer = {X,Y,Vx, Vy, Diameter,Angle,
+    NewPlayer = {X,Y,LineEndX,LineEndY,Vx, Vy, Diameter,Angle,
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver, Pid},
     NewPlayers = maps:update(Player, NewPlayer, Players),
