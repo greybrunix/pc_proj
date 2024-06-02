@@ -153,7 +153,8 @@ initMatch(Players, Planets) ->
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value <- Values],
 
-    Tick = spawn(fun() -> receive after 20 -> self() ! {tickover,Players,Planets} end end),    
+    MatchPid = self(),
+    Tick = spawn(fun() -> receive after 20 -> MatchPid ! {tickover,Players,Planets} end end),    
     receive
         {tickover,DoNotSwitchPlayers,DoNotSwitchPlanets} -> %do initMatch 
             Players = DoNotSwitchPlayers,
@@ -265,8 +266,8 @@ newPlayerPos(Pid, Player,Map) ->
         Y0 < 540.0 -> Y = 100.0
     end,
 
-    MapNew = Map#{Player => {float(X),float(Y),5.0,
-			     0.0,0.0,
+    MapNew = Map#{Player => {float(X),float(Y),0.0,
+			     0.0,5.0,
 			     0.0,
 			     float(randomNumRange(90,255)),
 			     float(randomNumRange(90,255)),
