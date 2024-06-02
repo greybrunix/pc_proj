@@ -98,8 +98,9 @@ user(Sock, Room) ->
         {tcp_error, _, _} ->
             Room ! {leave, self()};
         {update_data, Match} ->
-            JsonMatch = jsx:encode(Match),
-            io:format("~p~n", [Match]),
+	    NewMatch  = formatMatch(Match),
+            JsonMatch = jsx:encode(NewMatch),
+            io:format("~p~n", [NewMatch]),
             BinaryJsonMatch = list_to_binary(JsonMatch),
             gen_tcp:send(Sock, BinaryJsonMatch),
             user(Sock, Room);
@@ -107,3 +108,50 @@ user(Sock, Room) ->
             self() ! {update_data, [Participants,Planets]},
             user(Sock, Room)
     end.
+
+formatMatch(Match) ->
+    Players = maps:get("Players", Match),
+    Planets = maps:get("Planets", Match),
+
+    Formatted_Plyr = formatMatchPlayer(Players, maps:keys(Players)),
+    Formatted_Plnt = formatMatchPlanets(Planets, maps:keys(Planets)),
+
+    #{<<"Players">> => Formatted_Plyr, <<"Planets">> => Formatted_Plnt}.
+
+formatMatchPlayer(Map, []) ->
+    Map;
+formatMatchPlayer(Map, [Username | T]) ->
+    {X,Y,_Vx,_Vy, Diameter, Angle, R,G,B, Fuel, _, InGame, GameOver, _} =
+	maps:get(Username, Map),
+
+    NewMap0 = maps:remove(Username, Map),
+    NewMap  = NewMap0#{list_to_binary(Username) => #{<<"x">> => float_to_binary(X),
+						     <<"y">> => float_to_binary(Y),
+						     <<"diameter">> => float_to_binary(Diameter),
+						     <<"angle">> => float_to_binary(Angle),
+						     <<"r">> => float_to_binary(R),
+						     <<"g">> => float_to_binary(G),
+						     <<"b">> => float_to_binary(B),
+						     <<"fuel">> => float_to_binary(Fuel),
+						     <<"inGame">> => atom_to_binary(InGame),
+						     <<"hasLost">> => atom_to_binary(GameOver)}},
+    formatMatchPlayer(NewMap, T).
+
+formatMatchPlanets(Map, []) ->
+    Map;
+formatMatchPlanets(Map, [Num | T]) ->
+    {Dist, X, Y, _Vx, _Vy, Diameter, R, G, B} =
+	maps:get(Num, Map),
+
+    NewMap0 = maps:remove(Num, Map),
+    NewMap  = NewMap0#{integer_to_binary(Num) => #{<<"distance">> => float_to_binary(Dist),
+						<<"x">> => float_to_binary(X),
+						<<"y">> => float_to_binary(Y),
+						<<"diameter">> => float_to_binary(Diameter),
+						<<"r">> => float_to_binary(R),
+						<<"g">> => float_to_binary(G),
+						<<"b">> => float_to_binary(B)}},
+    formatMatchPlanets(NewMap, T).
+
+
+

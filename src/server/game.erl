@@ -231,7 +231,7 @@ randomNumRange(Small,Big) ->
     rand:uniform(Big - Small + 1) + Small - 1.
 
 generate_planets(Int) -> 
-    Sistema = #{0 => {0,960,540,0,0,35,255,255,0}}, % here comes the sun
+    Sistema = #{0 => {0.0,960.0,540.0,0.0,0.0,35.0,255.0,255.0,0.0}}, % here comes the sun
     generate_planets(Int, Sistema).
 
 generate_planets(0, Sistema) ->
@@ -241,37 +241,37 @@ generate_planets(Int,Sistema) ->
     io:format("PlanetaIntSistema~n"), 
     Distancia = Int * randomNumRange(40,100),
     % Ver se vale a pena colocar distancia sol-planeta
-    SistemaNovo = Sistema#{Int => {Distancia,
-				   randomNumRange(300,1600),
-				   randomNumRange(200,850),
-				   randomNumRange(50,100),
-				   randomNumRange(20,80),
-				   randomNumRange(4,20),
-				   randomNumRange(90,255),
-				   randomNumRange(90,255),
-				   randomNumRange(90,255)}},
+    SistemaNovo = Sistema#{Int => {float(Distancia),
+				   float(randomNumRange(300,1600)),
+				   float(randomNumRange(200,850)),
+				   float(randomNumRange(50,100)),
+				   float(randomNumRange(20,80)),
+				   float(randomNumRange(4,20)),
+				   float(randomNumRange(90,255)),
+				   float(randomNumRange(90,255)),
+				   float(randomNumRange(90,255))}},
     generate_planets(Int-1,SistemaNovo).
 
 newPlayerPos(Pid, Player,Map) ->
-    X0 = randomNumRange(300,1600),
-    Y0 = randomNumRange(200,850),
+    X0 = float(randomNumRange(300,1600)),
+    Y0 = float(randomNumRange(200,850)),
     if
-        X0 >= 960 -> X = 1750;
-        X0 < 960 -> X = 150
+        X0 >= 960.0 -> X = 1750.0;
+        X0 < 960.0 -> X = 150.0
     end,
 
     if
-        Y0 >= 540 -> Y = 900;
-        Y0 < 540 -> Y = 100
+        Y0 >= 540.0 -> Y = 900.0;
+        Y0 < 540.0 -> Y = 100.0
     end,
 
-    MapNew = Map#{Player => {X,Y,5,
-			     0,0,
-			     0,
-			     randomNumRange(90,255),
-			     randomNumRange(90,255),
-			     randomNumRange(90,255),
-			     100,
+    MapNew = Map#{Player => {float(X),float(Y),5.0,
+			     0.0,0.0,
+			     0.0,
+			     float(randomNumRange(90,255)),
+			     float(randomNumRange(90,255)),
+			     float(randomNumRange(90,255)),
+			     float(100),
 			     false,true,false, Pid}},
     MapNew.
 
