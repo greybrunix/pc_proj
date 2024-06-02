@@ -1,7 +1,7 @@
 public class Player {
-   public int level;
-   public int victories_in_row;
-   public int loses_in_row;
+   public float level;
+   public float victories_in_row;
+   public float loses_in_row;
    public float x;
    public float y;
    public float diameter;
@@ -13,13 +13,13 @@ public class Player {
    public float lineEndY;
    public float targetAngle;
    public float easingAngle;
-   public int r;
-   public int g;
-   public int b;
+   public float r;
+   public float g;
+   public float b;
    public float fuel;
    public String username;
    public boolean waitingGame;
-   public boolean game;
-   public boolean gameOver;
+   public boolean inGame;
+   public boolean hasLost;
    public boolean gameWon;
 }
