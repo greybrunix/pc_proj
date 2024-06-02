@@ -138,7 +138,7 @@ public class LoginApp {
             isTypingPassword = true;
         } else if (parent.mouseX >= buttonX && parent.mouseX <= buttonX + buttonWidth &&
                 parent.mouseY >= buttonY && parent.mouseY <= buttonY + buttonHeight) {
-            if (!userInput.equals("") && !userInput.equals("")) {
+            if (!userInput.isEmpty() && !passwordInput.isEmpty()) {
                 String res = Interface.loginUser(userInput, passwordInput);
                 if (res.equals("ok")) {
                     parent.setup();
@@ -153,7 +153,7 @@ public class LoginApp {
             }
         } else if (parent.mouseX >= buttonX && parent.mouseX <= buttonX + buttonWidth + 110 &&
                 parent.mouseY >= buttonY && parent.mouseY <= buttonY + buttonHeight + 50) {
-            if (!userInput.equals("") && !userInput.equals("")) {
+            if (!userInput.isEmpty() && !passwordInput.isEmpty()) {
                 String res = Interface.createUser(userInput, passwordInput);
                 if (res.equals("ok")) {
                     Interface.loginMenu = false;
