@@ -242,11 +242,15 @@ generate_planets(0, Sistema) ->
     Sistema;
 generate_planets(Int,Sistema) ->
     io:format("PlanetaIntSistema~n"), 
-    Distancia = Int * randomNumRange(40,100),
+    X = float(randomNumRange(300,1600)),
+    Y = float(randomNumRange(200,850)),
+    DifX = X - 960.0,
+    DifY = Y - 540.0,
+    Distancia = math:sqrt(DifX * DifX + DifY * DifY), 
     % Ver se vale a pena colocar distancia sol-planeta
     SistemaNovo = Sistema#{Int => {float(Distancia),
-				   float(randomNumRange(300,1600)),
-				   float(randomNumRange(200,850)),
+				   X,
+				   Y,
 				   float(randomNumRange(50,100)),
 				   float(randomNumRange(20,80)),
 				   float(randomNumRange(4,20)),
