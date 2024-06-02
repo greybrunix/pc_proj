@@ -28,7 +28,6 @@ verifyPlayerLevel(Level, [[_|_], NiveldaSala]) ->
 game([]) ->
     receive
 	{join_game,Username,PlayerPid} ->
-            io:format("adiciona ao game ~p~n", [Username]),
             game([[[{PlayerPid,Username}],login:player_level(Username)]])
     end;
 
@@ -80,11 +79,8 @@ game([[Participants,NiveldaSala]|Salas]) ->
 		    end
 	    end;
 	{timeout} ->
-            io:format("TimeoutRecebido~n"), 
             ParticipantsMap = through_players(Participants),
-            io:format("TimeoutParticipants~n"), 
             Planets = generate_planets(randomNumRange(2,5)),
-            io:format("TimeoutPlanets~n"), 
             
             ?MODULE ! {add_match,[ParticipantsMap,Planets]},
 	        
@@ -159,9 +155,10 @@ initMatch(Players, Planets) ->
                 updatePlanetsPos(Planets, length(maps:keys(Planets))-1),
             NewPlayers =
                 updatePlayersPos({Planets, Players}, maps:keys(Players)),
-            _ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
-            [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
-            initMatch(NewPlayers, NewPlanets)
+            NewPlayers1 = 
+		detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers))
+            [Pid ! {update_data, [NewPlayers1, NewPlanets]} || Pid <- Pids],
+            initMatch(NewPlayers1, NewPlanets)
     end.
 %----------------------------HANDLES----------------------------
 handle({"UP", Pid},PlayersInfo) ->
@@ -210,7 +207,6 @@ randomNumRange(Small,Big) ->
     rand:uniform(Big - Small + 1) + Small - 1.
 
 generate_planets(Int) -> 
-    io:format("PlanetaInt~n"), 
     Sistema = #{0 => {0,960,540,0,0,35,255,255,0}}, % here comes the sun
     generate_planets(Int, Sistema).
 
@@ -329,51 +325,58 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
     updatePlayersPos({Planets,NewPlayers}, T).
 
 
+detectPlayerCollisions(Players, []) ->
+    Players;
 
-detectPlayerCollisions(Players, Player) ->
+detectPlayerCollisions(Players, [ Player| T ]) ->
     {X, Y, Vx0, Vy0, Diameter, Angle,
      R, G, B, Fuel,
      WaitingGame, InGame, GameOver, Pid} = maps:get(Player, Players),
     
-    CollidedPlayers = lists:filter(fun({_, {PX, PY, _, _, PDiameter, _, _, _, _, _, _, _, _,_}}) ->
-        math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)) < (Diameter / 2 + PDiameter / 2)
-    end, maps:to_list(maps:remove(Player, Players))),
-    
-    UpdatedPlayers = lists:foldl(fun({OtherPlayer, {PX, PY, PVx0, PVy0, PDiameter, PAngle,
-                                                    PR, PG, PB, PFuel,
-                                                    PWaitingGame, PInGame, PGameOver, PPid}}, AccPlayers) ->
-						% Calculate the normal vector
-					 Nx0 = PX - X,
-					 Ny0 = PY - Y,
-					 Distance = math:sqrt(Nx0 * Nx0 + Ny0 * Ny0),
-					 Nx = Nx0 / Distance,
-					 Ny = Ny0 / Distance,
+    UpdatedPlayers = detectPlayerCollisions(Players, Player, maps:keys(Players)),
+    detectPlayerCollisions(UpdatedPlayers, T).
+detectPlayerCollisions(Players, Player, []) ->
+    Players.
+detectPlayerCollisions(Players, Player, [PPlayer | T ]) ->
+    {PX, PY, PVx0, PVy0, PDiameter, PAngle,
+     PR, PG, PB, PFuel,
+     PWaitingGame, PInGame, PGameOver, PPid} = maps:get(OPlayer),
+    {X,Y,Vx0,Vy0,Diameter,Angle,
+     R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid} = maps:get(Player),
+    DistanceCenters = math:sqrt((PX-X)*(PX-X)+(PY-Y)*(PY-Y))
+    Collide = (DistanceCenters > Diameter) andalso (DistanceCenters > PDiameter) 
+    if
+	Collide -> AccPlayers2 = Players;
+	true ->
+	    Nx0 = PX - X,
+	    Ny0 = PY - Y,
+	    Distance = math:sqrt(Nx0 * Nx0 + Ny0 * Ny0),
+	    Nx = Nx0 / Distance,
+	    Ny = Ny0 / Distance,
 
 						% Calculate the velocities along the normal
-					 Vn1 = Vx0 * Nx + Vy0 * Ny,
-					 Vn2 = PVx0 * Nx + PVy0 * Ny,
-					 
+	    Vn1 = Vx0 * Nx + Vy0 * Ny,
+	    Vn2 = PVx0 * Nx + PVy0 * Ny,
+	    
 						% Exchange the normal velocities
-					 Vn1New = Vn2,
-					 Vn2New = Vn1,
+	    Vn1New = Vn2,
+	    Vn2New = Vn1,
 
 						% Calculate the new velocities
-					 Vx1New = Vx0 + (Vn1New - Vn1) * Nx,
-					 Vy1New = Vy0 + (Vn1New - Vn1) * Ny,
-					 Vx2New = PVx0 + (Vn2New - Vn2) * Nx,
-					 Vy2New = PVy0 + (Vn2New - Vn2) * Ny,
+	    Vx1New = Vx0 + (Vn1New - Vn1) * Nx,
+	    Vy1New = Vy0 + (Vn1New - Vn1) * Ny,
+	    Vx2New = PVx0 + (Vn2New - Vn2) * Nx,
+	    Vy2New = PVy0 + (Vn2New - Vn2) * Ny,
 
 						% Update both players
-					 NewPlayer = {X, Y, Vx1New, Vy1New, Diameter, Angle,
-						      R, G, B, Fuel,
-						      WaitingGame, InGame, GameOver, Pid},
-					 NewOtherPlayer = {PX, PY, Vx2New, Vy2New, PDiameter, PAngle,
-							   PR, PG, PB, PFuel,
-							   PWaitingGame, PInGame, PGameOver,PPid},
-					 
-					 AccPlayers1 = maps:update(Player, NewPlayer, AccPlayers),
-					 AccPlayers2 = maps:update(OtherPlayer, NewOtherPlayer, AccPlayers1),
-					 AccPlayers2
-				 end, Players, CollidedPlayers),
-
-    UpdatedPlayers.
+	    NewPlayer = {X, Y, Vx1New, Vy1New, Diameter, Angle,
+			 R, G, B, Fuel,
+			 WaitingGame, InGame, GameOver, Pid},
+	    NewOtherPlayer = {PX, PY, Vx2New, Vy2New, PDiameter, PAngle,
+			      PR, PG, PB, PFuel,
+			      PWaitingGame, PInGame, PGameOver,PPid},
+    
+	    AccPlayers1 = maps:update(Player, NewPlayer, Players),
+	    AccPlayers2 = maps:update(PPlayer, NewOtherPlayer, AccPlayers1)
+    end,
+    detectPlayerCollisions(AccPlayers2, Player, T).
