@@ -35,10 +35,10 @@ loop(State) ->
 handle({create_account, User, Passwd}, Map) ->
     UserBin = list_to_binary(User),
     PasswdBin = list_to_binary(Passwd),
-    UserKey = << "\"", UserBin/binary, "\"" >>,
+    UserKey = <<UserBin/binary>>,
     case maps:is_key(UserKey, Map) of
         false ->
-            Passwd_str = << "\"", PasswdBin/binary, "\"" >>,
+            Passwd_str = <<PasswdBin/binary>>,
             NewMap = Map#{UserKey => #{<<"Passwd">> => Passwd_str, <<"online">> => <<"true">>, <<"level">> => <<"0">>, <<"wins">> => <<"0">>, <<"losses">> => <<"0">>}},
             write_json_to_file(NewMap),
             {ok, NewMap};
@@ -48,7 +48,7 @@ handle({create_account, User, Passwd}, Map) ->
 
 handle({close_account, User}, Map) ->
     UserBin = list_to_binary(User),
-    User_str = << "\"", UserBin/binary, "\"" >>,
+    User_str = <<UserBin/binary>>,
     case maps:find(User_str, Map) of
         {ok, _} ->
             NewMap = maps:remove(User_str, Map),
@@ -61,8 +61,8 @@ handle({close_account, User}, Map) ->
 handle({login, User, Passwd}, Map) ->
     UserBin = list_to_binary(User),
     PasswdBin = list_to_binary(Passwd),
-    User_str = << "\"", UserBin/binary, "\"" >>,
-    Passwd_str = << "\"", PasswdBin/binary, "\"" >>,
+    User_str = <<UserBin/binary>>,
+    Passwd_str = <<PasswdBin/binary>>,
     case maps:find(User_str, Map) of
         {ok, UserData} ->
             case maps:get(<<"Passwd">>, UserData) of
@@ -85,7 +85,7 @@ handle({login, User, Passwd}, Map) ->
 
 handle({logout, User}, Map) ->
     UserBin = list_to_binary(User),
-    User_str = << "\"", UserBin/binary, "\"" >>,
+    User_str = <<UserBin/binary>>,
     case maps:find(User_str, Map) of
         {ok, UserData} ->
             case maps:get(<<"online">>, UserData) of
@@ -108,7 +108,7 @@ handle(online, Map) ->
 
 handle({player_level, User}, Map) ->
     UserBin = list_to_binary(User),
-    User_str = << "\"", UserBin/binary, "\"" >>,
+    User_str = <<UserBin/binary>>,
     case maps:find(User_str, Map) of
         {ok, UserData} ->
             Level = maps:get(<<"level">>, UserData),
@@ -138,14 +138,20 @@ write_json_to_file(Map) ->
 read_json_from_file() ->
     case file:read_file("accounts.json") of
         {ok, Binary} ->
-            case jsx:decode(Binary, [return_maps]) of
-                {ok, Json} -> Json;
-                _ -> maps:new()
+            CleanedBinary = clean_json(Binary),
+            case jsx:decode(CleanedBinary, [return_maps]) of
+                Json when is_map(Json) -> Json;
+                _ -> maps:new()  % Handle decoding errors
             end;
         {error, enoent} ->  % File does not exist
-            EmptyJson = "{}",
+            EmptyJson = <<"{}">>,
             file:write_file("accounts.json", EmptyJson),
             maps:new();
         {error, _Reason} ->  % Some other error
             maps:new()
     end.
+
+clean_json(Binary) ->
+    JsonString = binary_to_list(Binary),
+    CleanedString = string:replace(JsonString, "\\\"", "", all),
+    list_to_binary(CleanedString).
