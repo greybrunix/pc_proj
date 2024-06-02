@@ -98,11 +98,9 @@ user(Sock, Room) ->
         {tcp_error, _, _} ->
             Room ! {leave, self()};
         {update_data, Match} ->
-	    NewMatch  = formatMatch(Match),
+            NewMatch  = formatMatch(Match),
             JsonMatch = jsx:encode(NewMatch),
-            io:format("~p~n", [NewMatch]),
-            BinaryJsonMatch = list_to_binary(JsonMatch),
-            gen_tcp:send(Sock, BinaryJsonMatch),
+            gen_tcp:send(Sock, <<JsonMatch/binary, "\n">>), % Adding newline for clarity
             user(Sock, Room);
         {match,Participants,Planets} ->
             self() ! {update_data, [Participants,Planets]},
@@ -116,7 +114,7 @@ formatMatch(Match) ->
     Formatted_Plyr = formatMatchPlayer(Players, maps:keys(Players)),
     Formatted_Plnt = formatMatchPlanets(Planets, maps:keys(Planets)),
 
-    #{<<"Players">> => Formatted_Plyr, <<"Planets">> => Formatted_Plnt}.
+    #{<<"players">> => Formatted_Plyr, <<"planets">> => Formatted_Plnt}.
 
 formatMatchPlayer(Map, []) ->
     Map;
@@ -152,6 +150,3 @@ formatMatchPlanets(Map, [Num | T]) ->
 						<<"g">> => float_to_binary(G),
 						<<"b">> => float_to_binary(B)}},
     formatMatchPlanets(NewMap, T).
-
-
-
