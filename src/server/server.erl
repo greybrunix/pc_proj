@@ -1,8 +1,8 @@
 -module(server).
--export([start/1, stop/1]).
+-export([start/1, stop/0]).
 
-start(Port) -> spawn(fun() -> server(Port) end).
-stop(Server) -> Server ! stop.
+start(Port) -> register(?MODULE, spawn(fun() -> server(Port) end)).
+stop() -> ?MODULE ! stop.
 
 server(Port) ->
     login:start(),
