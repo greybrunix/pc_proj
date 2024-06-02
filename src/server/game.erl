@@ -125,7 +125,7 @@ key_pressed(Key, Username) -> ok.
 getPid(Value) ->
     {_,_,_,_,
      _,_,_,_,
-     _,_,_,Pid}= Value,
+     _,_,_,,_,_,Pid}= Value,
     Pid.
 
 
@@ -170,7 +170,7 @@ handle({"UP", Pid},PlayersInfo) ->
     Vx = Vx0 + 0.5 * math:cos((Angle * math:pi()) / 180), % Apply linear acceleration over Angle direction
     Vy = Vy0 + 0.5 * math:sin((Angle * math:pi()) / 180), % Apply linear acceleration over Angle direction
     NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
-	       R,G,B,Fuel,WaitingGame,InGame,GameOver},
+	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
@@ -178,12 +178,12 @@ handle({"UP", Pid},PlayersInfo) ->
 handle({"LEFT", Pid},PlayersInfo) ->
     {X,Y,Vx0, Vy0,Diameter,Angle0,
      R,G,B,Fuel,
-     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+     WaitingGame,InGame,GameOver,Pid}= maps:get(Pid,PlayersInfo),
     Angle = (Angle0 + 10) rem 360,
     Vx = Vx0 * math:cos((Angle * math:pi()) / 180) - Vy0 * math:sin((Angle * math:pi()) / 180),
     Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
     NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
-	       R,G,B,Fuel,WaitingGame,InGame,GameOver},
+	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
@@ -191,13 +191,13 @@ handle({"LEFT", Pid},PlayersInfo) ->
 handle({"RIGHT", Pid},PlayersInfo) ->
     {X,Y,Vx0, Vy0, Diameter,Angle0,
      R,G,B,Fuel,
-     WaitingGame,InGame,GameOver}= maps:get(Pid,PlayersInfo),
+     WaitingGame,InGame,GameOver, Pid}= maps:get(Pid,PlayersInfo),
     Angle = (Angle0 - 10) rem 360, % Compute new angle in clockwise direction
     Vx = Vx0 * math:cos((Angle * math:pi()) / 180) - Vy0 * math:sin((Angle * math:pi()) / 180),
     Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
 
     NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
-	       R,G,B,Fuel-math:sqrt(Vx*Vx+Vy*Vy),WaitingGame,InGame,GameOver},
+	       R,G,B,Fuel-math:sqrt(Vx*Vx+Vy*Vy),WaitingGame,InGame,GameOver,Pid},
     NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
 
     {ok,NextPlayers}.
