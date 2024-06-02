@@ -40,15 +40,17 @@ public class Game {
         if (me.waitingGame) {
             parent.text("Waiting for players to begin game...", (float) (parent.width-950) /2,
                     (float) parent.height /2 );
-        } else if (me.game) {
+        } else if (me.inGame) {
             game();
         }
     }
 
     public void receiveData() throws IOException, InterruptedException {
         new Thread(() -> {
-            while (me.game) {
+            while (me.inGame || me.waitingGame) {
                 try {
+                    if (me.waitingGame)
+                        data = Interface.receiveData();
                     data = Interface.receiveData();
 
                     new Thread(() -> {
@@ -58,7 +60,7 @@ public class Game {
                                 planets = gameData.planets;
                                 players = gameData.players;
                             }
-                            me.game = true;
+                            me.inGame = true;
                             me.waitingGame = false;
                         } catch (JsonProcessingException e) {
                             throw new RuntimeException(e);
@@ -78,18 +80,18 @@ public class Game {
         for (Map.Entry<String, Player> player : players.entrySet()) {
             if (player.getValue().waitingGame)
                 player.getValue().waitingGame = false;
-            if (!player.getValue().gameOver)
+            if (!player.getValue().hasLost)
                 drawPlayer(player.getValue().x, player.getValue().y, player.getValue().diameter, player.getValue().angle, player.getValue().r, player.getValue().b, player.getValue().b,
                         player.getValue().lineEndX, player.getValue().lineEndY);
         }
     }
 
-    public void drawBall(float x, float y, float diameter, int r, int g, int b) {
+    public void drawBall(float x, float y, float diameter, float r, float g, float b) {
         parent.fill(r, g, b);
         parent.ellipse(x, y, diameter, diameter);
     }
 
-    public void drawPlayer(float x, float y, float diameter, float angle, int r, int g, int b,
+    public void drawPlayer(float x, float y, float diameter, float angle, float r, float g, float b,
                            float lineEndX, float lineEndY) {
         parent.stroke(255);
         parent.line(x, y, lineEndX, lineEndY);
@@ -98,10 +100,13 @@ public class Game {
 
     public void keyPressed() {
         if (parent.key == parent.LEFT) {
+            System.out.println("ESQUERDA");
             Interface.keyPressed(me.username, "LEFT");
         } else if (parent.key == parent.RIGHT) {
+            System.out.println("DIREITA");
             Interface.keyPressed(me.username, "RIGHT");
         } else if (parent.key == parent.UP) {
+            System.out.println("CIMA");
             Interface.keyPressed(me.username, "UP");
         }
     }
