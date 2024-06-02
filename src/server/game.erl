@@ -145,7 +145,8 @@ initMatch(Players, Planets) ->
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value <- Values],
     
-    if (TestRemaining == 0 orelse (TestWinner == 1)) -> memory ! {remove, [Players, Planets]}
+    if ((TestRemaining == 0) orelse (TestWinner == 1)) -> memory ! {remove, [Players, Planets]};
+                                                          true -> ok
     end,
 
     if
@@ -155,9 +156,9 @@ initMatch(Players, Planets) ->
             [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
         true ->
             NewPlanets =
-                updatePlanetsPos(Planets, lists:len(maps:keys(Planets))),
+                updatePlanetsPos(Planets, length(maps:keys(Planets))-1),
             NewPlayers =
-                updatePlayersPos({Planets, Players}, lists:len(maps:keys(Planets))),
+                updatePlayersPos({Planets, Players}, maps:keys(Players)),
             _ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
             [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
             initMatch(NewPlayers, NewPlanets)
@@ -210,7 +211,7 @@ randomNumRange(Small,Big) ->
 
 generate_planets(Int) -> 
     io:format("PlanetaInt~n"), 
-    Sistema = #{0 => {0,960,540,35,255,255,0}}, % here comes the sun
+    Sistema = #{0 => {0,960,540,0,0,35,255,255,0}}, % here comes the sun
     generate_planets(Int, Sistema).
 
 generate_planets(0, Sistema) ->
@@ -271,7 +272,7 @@ updatePlanetsPos(Planets, 0) ->
 updatePlanetsPos(Planets,NumPlanet) ->
 %TODO calculos dos planetas por tick
     {Dist, X0, Y0, Vx0, Vy0, Diameter, R, G, B} =
-	maps:get(Planets, NumPlanet),
+	maps:get(NumPlanet, Planets),
     V = math:sqrt(Vx0*Vx0 + Vy0*Vy0),
     Ac = V*V/Dist,
     Theta = math:atan2(X0, Y0),
@@ -302,10 +303,17 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
     Vx = Vx0,
     Vy = Vy0,
 
-    Collided = lists:any(fun({_, {_, PX, PY, _, _, PDiameter, _, _, _}}) ->
-        math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)) < (Diameter / 2 + PDiameter / 2)
-    end, maps:to_list(Planets)),
+   PlanetsList = maps:to_list(Planets),
+
+    CollidingPlanets = lists:filter(fun({_, {_, PX, PY, _, _, PDiameter, _, _, _}}) ->
+    Distance = math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)),
+    RadiusSum = (Diameter / 2) + (PDiameter / 2),
+    Distance < RadiusSum
+
+    end, PlanetsList), 
     
+    % Update game status based on collisions
+    Collided = length(CollidingPlanets) > 0,
     if
         Collided ->
             GameOver = true,
@@ -314,7 +322,6 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
             GameOver = GameOver_,
             InGame = InGame_
     end,
-
     NewPlayer = {X,Y,Vx, Vy, Diameter,Angle,
 		 R,G,B,Fuel,WaitingGame,
 		 InGame,GameOver, Pid},
