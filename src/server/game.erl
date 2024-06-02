@@ -344,10 +344,9 @@ detectPlayerCollisions(Players, Player, [PPlayer | T ]) ->
     {X,Y,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid} = maps:get(Player, Players),
     DistanceCenters = math:sqrt((PX-X)*(PX-X)+(PY-Y)*(PY-Y)),
-    Collide = (Player == PPlayer)orelse ((DistanceCenters > Diameter) andalso (DistanceCenters > PDiameter)),
+    Collide = (Player /= PPlayer) orelse ((DistanceCenters =< Diameter) orelse (DistanceCenters =< PDiameter)),
     if
-	Collide -> AccPlayers2 = Players;
-	true ->
+	Collide ->
 	    Nx0 = PX - X,
 	    Ny0 = PY - Y,
 	    Distance = math:sqrt(Nx0 * Nx0 + Ny0 * Ny0),
@@ -377,6 +376,8 @@ detectPlayerCollisions(Players, Player, [PPlayer | T ]) ->
 			      PWaitingGame, PInGame, PGameOver,PPid},
     
 	    AccPlayers1 = maps:update(Player, NewPlayer, Players),
-	    AccPlayers2 = maps:update(PPlayer, NewOtherPlayer, AccPlayers1)
+	    AccPlayers2 = maps:update(PPlayer, NewOtherPlayer, AccPlayers1);
+	true ->
+	    AccPlayers2 = Players
     end,
     detectPlayerCollisions(AccPlayers2, Player, T).
