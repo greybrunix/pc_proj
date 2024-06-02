@@ -130,37 +130,38 @@ getPid(Value) ->
 
 
 initMatch(Players, Planets) ->
-
+    % Filter to count players who are still in the game
     TestRemaining = length(maps:keys(maps:filter(fun(_Key, Value) ->
-			     {_, _, _, _, _, _, _, _, _, _, _, InGame, _} = Value,
-			     InGame
-		     end, Players))),
-    TestWinner    = length(maps:keys(maps:filter(fun(_Key, Value) ->
-			   {_, _, _, _, _, _, _, _, _, _, _, InGame, GameOver} = Value,
-			   GameOver and InGame
-		   end, Players))),
+        {_, _, _, _, _, _, _, _, _, _, _, InGame, _,_} = Value,
+        InGame
+    end, Players))),
+    
+    % Filter to count players who are not GameOver and still in the game
+    TestWinner = length(maps:keys(maps:filter(fun(_Key, Value) ->
+        {_, _, _, _, _, _, _, _, _, _, _, InGame, GameOver,_} = Value,
+        InGame and not GameOver
+    end, Players))),
+    
     Values = maps:values(Players),
-    Pids = [getPid(Value) || Value  <- Values],
-    if (TestRemaining == 0 orelse (TestWinner == 1)) -> ?MODULE ! {remove, [Players, Planets]}
+    Pids = [getPid(Value) || Value <- Values],
+    
+    if (TestRemaining == 0 orelse (TestWinner == 1)) -> memory ! {remove, [Players, Planets]}
     end,
+
     if
-	(TestRemaining == 0) and (TestWinner == 1) ->
-	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
-	(TestRemaining == 0) ->
-	    [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
-	true ->
-	    NewPlanets =
-		updatePlanetsPos(Planets,
-				 lists:len(maps:keys(Planets))),
-	    NewPlayers =
-		updatePlayersPos({Planets,Players},
-				lists:len(maps:keys(Planets))),
-	    _ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
-	    [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
-	    initMatch(NewPlayers, NewPlanets)
-
+        (TestRemaining == 0) and (TestWinner == 1) ->
+            [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+        (TestRemaining == 0) ->
+            [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+        true ->
+            NewPlanets =
+                updatePlanetsPos(Planets, lists:len(maps:keys(Planets))),
+            NewPlayers =
+                updatePlayersPos({Planets, Players}, lists:len(maps:keys(Planets))),
+            _ = [detectPlayerCollisions(Players, Player) || Player <- maps:to_list(Players)],
+            [Pid ! {update_data, [Players, Planets]} || Pid <- Pids],
+            initMatch(NewPlayers, NewPlanets)
     end.
-
 %----------------------------HANDLES----------------------------
 handle({"UP", Pid},PlayersInfo) ->
     {X,Y,Vx0,Vy0,Diameter,Angle,
