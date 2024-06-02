@@ -156,7 +156,7 @@ initMatch(Players, Planets) ->
             NewPlayers =
                 updatePlayersPos({Planets, Players}, maps:keys(Players)),
             NewPlayers1 = 
-		detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers))
+		detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers)),
             [Pid ! {update_data, [NewPlayers1, NewPlanets]} || Pid <- Pids],
             initMatch(NewPlayers1, NewPlanets)
     end.
