@@ -364,14 +364,18 @@ detectPlayerCollisions(Players, []) ->
 detectPlayerCollisions(Players, [ Player| T ]) ->
     UpdatedPlayers = detectPlayerCollisions(Players, Player, maps:keys(Players)),
     detectPlayerCollisions(UpdatedPlayers, T).
+
 detectPlayerCollisions(Players, Player, []) ->
     Players;
+
 detectPlayerCollisions(Players, Player, [PPlayer | T ]) ->
-    {PX, PY, LineEndX, LineEndY, PVx0, PVy0, PDiameter, PAngle,
+    {PX, PY, LineEndPX, LineEndPY, PVx0, PVy0, PDiameter, PAngle,
      PR, PG, PB, PFuel,
      PWaitingGame, PInGame, PGameOver, PPid} = maps:get(PPlayer, Players),
+	
     {X,Y, LineEndX, LineEndY, Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid} = maps:get(Player, Players),
+    
     DistanceCenters = math:sqrt((PX-X)*(PX-X)+(PY-Y)*(PY-Y)),
     Collide = (Player /= PPlayer) andalso ((DistanceCenters =< Diameter) orelse (DistanceCenters =< PDiameter)),
     if
@@ -392,11 +396,22 @@ detectPlayerCollisions(Players, Player, [PPlayer | T ]) ->
 	    Vy1New = Vy0 + (Vn1New - Vn1) * Ny,
 	    Vx2New = PVx0 + (Vn2New - Vn2) * Nx,
 	    Vy2New = PVy0 + (Vn2New - Vn2) * Ny,
+	    
+	    NewAngle = math:atan(Vy1New/Vx1New),
+	    NewPAngle = math:atan(Vy2New/Vx2New),
+	    
+	    LineLength = 10.0,
+	    
+	    NewLineEndPX = PX + math:cos(NewPAngle) * LineLength,
+	    NewLineEndPY = PY + math:sin(NewPAngle) * LineLength,	
+		    
+	    NewLineEndX = X + math:cos(NewAngle) * LineLength,
+	    NewLineEndY = Y + math:sin(NewAngle) * LineLength,
 
-	    NewPlayer = {X, Y, Vx1New, Vy1New, Diameter, Angle,
+	    NewPlayer = {X, Y, NewLineEndX, NewLineEndY,Vx1New, Vy1New, Diameter, NewAngle,
 			 R, G, B, Fuel,
 			 WaitingGame, InGame, GameOver, Pid},
-	    NewOtherPlayer = {PX, PY, Vx2New, Vy2New, PDiameter, PAngle,
+	    NewOtherPlayer = {PX, PY, NewLineEndPX, NewLineEndPY, Vx2New, Vy2New, PDiameter, NewPAngle,
 			      PR, PG, PB, PFuel,
 			      PWaitingGame, PInGame, PGameOver,PPid},
     
