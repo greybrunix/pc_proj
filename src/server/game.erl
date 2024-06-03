@@ -2,6 +2,7 @@
 -export([start/0,
 	 join_game/2,
 	 keyPressed/3,
+	 keyReleased/2,
 	 get_matches/0
         ]).
 
@@ -126,6 +127,18 @@ keyPressed(Key,Username,[Players, Planets, Pid]) ->
                                        % chamada recursiva, pelos novos
     "ok".
 
+keyReleased(Username, [Players,Planets,Pid]) ->
+    {ok,Next} = handle(Username,Players),
+
+    NextMatch = [Next,Planets,Pid],
+    memory ! {remove,[Players,Planets,Pid]},
+    memory ! {add_match,NewMatch},
+
+    io:format("Next: ~p~n", [Next]),
+    Pid ! {switch, Next, Planets},
+
+    "ok".
+
 %-----------------------------MATCH------------------------------
 
 getPid(Value) ->
@@ -190,6 +203,20 @@ initMatch(Players, Planets) ->
     end.
 
 %----------------------------HANDLES----------------------------
+handle(Username,PlayersInfo) -> 
+    {X,Y,LineEndX,LineEndY,Vx0,Vy0,Diameter,Angle,
+     R,G,B,Fuel,
+     WaitingGame,InGame,GameOver, Pid_}= maps:get(Username,PlayersInfo),
+
+    Vx = Vx0 * 0.75 * math:cos(Angle),
+    Vy = Vy0 * 0.75 * math:sin(Angle),
+
+    NewInfo = {X,Y,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
+	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid_},
+    NextPlayers = maps:update(Username,NewInfo,PlayersInfo),
+	
+    {ok,NextPlayers};
+
 handle({"up", Username},PlayersInfo) ->
     {X,Y,LineEndX,LineEndY,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
