@@ -105,8 +105,11 @@ matchesOccurring(Matches) ->
                 Matches;
             {add_match, Match} -> 
                 [Match | Matches];
-            {remove, Match} -> 
-                lists:delete(Match, Matches)
+            {remove, MatchPid} ->
+                Match = [{Players,Planets,Pid} || {Players,Planets,Pid} <- Matches, Pid == MatchPid],
+                io:format("Removing:~n~p~n",[Match]),
+                NewNewMatches = lists:delete(hd(Match), Matches),
+                NewNewMatches
         end,
     matchesOccurring(NewMatches).
 
@@ -120,7 +123,7 @@ keyPressed(Key,Username,{Players, Planets, Pid}) ->
     {ok,Next} = handle({Key,Username},Players),
     NewMatch = {Next,Planets,Pid},
 
-    memory ! {remove,{Players,Planets,Pid}},
+    memory ! {remove,Pid},
     memory ! {add_match,NewMatch},
 
     "ok".
@@ -129,7 +132,7 @@ keyReleased(Username, {Players,Planets,Pid}) ->
     {ok,Next} = handle({"released",Username},Players),
 
     NextMatch = {Next,Planets,Pid},
-    memory ! {remove,{Players,Planets,Pid}},
+    memory ! {remove,Pid},
     memory ! {add_match,NextMatch},
 
     io:format("Next: ~p~n", [Next]),
@@ -172,7 +175,7 @@ initMatch(Players, Planets) ->
     
 
 
-    if ((TestRemaining == 0) orelse (TestWinner == 1)) -> memory ! {remove, {Players, Planets, self()}};
+    if ((TestRemaining == 0) orelse (TestWinner == 1)) -> memory ! {remove, self()};
                                                           true -> ok
     end,
 
@@ -189,8 +192,8 @@ initMatch(Players, Planets) ->
             NewPlayers1 = 
                 detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers)),
             [Pid ! {update_data, #{"Players" => NewPlayers1, "Planets" => (NewPlanets)}} || Pid <- Pids],
-	    memory ! {remove, {PlayersNew,PlanetsNew,self()}},
-	    memory ! {add_match, {NewPlayers1, NewPlanets, self()}},
+            memory ! {remove, self()},
+            memory ! {add_match, {NewPlayers1, NewPlanets, self()}},
             initMatch(NewPlayers1, NewPlanets)
     end.
 
