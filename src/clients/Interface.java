@@ -51,6 +51,10 @@ public class Interface extends PApplet {
         client_manager.send("key " + key + " " + username);
     }
 
+    public static void keyReleased(String username) {
+        client_manager.send("released " + username);
+    }
+
     public static String receiveData() throws IOException {
         return client_manager.receive();
     }
@@ -106,6 +110,11 @@ public class Interface extends PApplet {
         else if (gameMenu)
             game.keyPressed();
     }
+
+    public void keyPressed() {
+        if (gameMenu)
+            game.keyPressed();
+    }    
 
     public void mousePressed() {
         if (loginMenu) {
