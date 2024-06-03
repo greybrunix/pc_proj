@@ -82,7 +82,6 @@ game([[Participants,NiveldaSala]|Salas]) ->
             
 	        
             MatchPid = spawn(fun() -> initMatch(ParticipantsMap,Planets) end),
-           	memory ! {add_match,[ParticipantsMap,Planets, MatchPid]},
 	    [ PlayerPid ! {in_match,ParticipantsMap,Planets} || {PlayerPid,_} <- Participants],
                                    
             game(Salas)
