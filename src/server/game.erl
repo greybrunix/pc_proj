@@ -128,11 +128,11 @@ keyPressed(Key,Username,[Players, Planets, Pid]) ->
     "ok".
 
 keyReleased(Username, [Players,Planets,Pid]) ->
-    {ok,Next} = handle(Username,Players),
+    {ok,Next} = handle({"released",Username},Players),
 
     NextMatch = [Next,Planets,Pid],
     memory ! {remove,[Players,Planets,Pid]},
-    memory ! {add_match,NewMatch},
+    memory ! {add_match,NextMatch},
 
     io:format("Next: ~p~n", [Next]),
     Pid ! {switch, Next, Planets},
@@ -203,13 +203,13 @@ initMatch(Players, Planets) ->
     end.
 
 %----------------------------HANDLES----------------------------
-handle(Username,PlayersInfo) -> 
+handle({"released",Username},PlayersInfo) -> 
     {X,Y,LineEndX,LineEndY,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver, Pid_}= maps:get(Username,PlayersInfo),
 
-    Vx = Vx0 * 0.75 * math:cos(Angle),
-    Vy = Vy0 * 0.75 * math:sin(Angle),
+    Vx = Vx0 - 75 * math:cos(Angle),
+    Vy = Vy0 - 75 * math:sin(Angle),
 
     NewInfo = {X,Y,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
 	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid_},
