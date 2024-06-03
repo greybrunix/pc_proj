@@ -191,13 +191,42 @@ handle({add_loss, User}, Map) ->
 	    {op, Map}
     end;    
 handle(leaderboard, Map) ->
-    OnlineUsers = #{<<"players">> => [#{Username => #{<<"level">> => integer_to_binary(list_to_integer(binary_to_list(maps:get(<<"level">>, UserData)))),
-				   <<"victories_in_row">> => integer_to_binary(list_to_integer(binary_to_list(maps:get(<<"wins">>, UserData)))),
-				   <<"losses_in_row">> => integer_to_binary(list_to_integer(binary_to_list(maps:get(<<"losses">>, UserData))))}}
-		   || {Username, UserData} <- maps:to_list(Map)]},
-    OnlineJson = jsx:encode(OnlineUsers),
-    OnlineJSON = io_lib:format("~p", [binary_to_list(<<OnlineJson/binary, "\n">>)]),
-    {OnlineJSON, Map}.
+    PlayersList = maps:to_list(Map),
+
+    SortedPlayers = lists:sort(
+        fun({_, P1}, {_, P2}) ->
+            Level1 = binary_to_integer(maps:get(<<"level">>, P1)),
+            Level2 = binary_to_integer(maps:get(<<"level">>, P2)),
+            Victories1 = binary_to_integer(maps:get(<<"wins">>, P1)),
+            Victories2 = binary_to_integer(maps:get(<<"wins">>, P2)),
+						Losses1 = binary_to_integer(maps:get(<<"losses">>, P1)),
+						Losses2 = binary_to_integer(maps:get(<<"losses">>, P2)),
+            case Level1 =:= Level2 of
+                true -> 
+									case Victories1 =:= Victories2 of
+										true -> Victories1 >= Victories2;
+										false -> Losses1 =< Losses2
+									end;
+                false -> Level1 >= Level2
+            end
+        end,
+        PlayersList
+    ),
+
+    TopPlayers = lists:sublist(SortedPlayers, 10),
+
+    ObjN = lists:foldl(
+        fun({Username, PlayerData}, Acc) ->
+            FilteredPlayerData = maps:with([<<"level">>, <<"wins">>, <<"losses">>], PlayerData),
+            maps:put(Username, FilteredPlayerData, Acc)
+        end,
+        maps:new(),
+        TopPlayers
+    ),
+
+    OnlineJson = jsx:encode(#{<<"players">> => ObjN}),
+    {OnlineJson, Map}.
+
 write_json_to_file(Map) ->
     Json = jsx:encode(Map),
     {ok, File} = file:open("accounts.json", [write]),
