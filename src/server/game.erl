@@ -53,8 +53,6 @@ game([[Participants,NiveldaSala]|Salas]) ->
 			    ParticipantsMap = through_players(Participants),
 			    Planets = generate_planets(randomNumRange(2, 5)),
 
-			    memory ! {add_match, [ParticipantsMap, Planets]},
-
 			    spawn(fun() -> initMatch(ParticipantsMap, Planets) end),
 
 			    [PlayerPidS ! {match, ParticipantsMap, Planets} || {PlayerPidS, _} <- Participants],
@@ -121,6 +119,7 @@ keyPressed(Key,Username,[Players, Planets, Pid]) ->
     memory ! {remove,[Players,Planets]},
     memory ! {add_match,NewMatch},
 
+    io:format("Next: ~p~n", [Next]),
     Pid ! {switch, Next, Planets}, % no initMatch, depois de fazer
                                        % a chamada recursiva mais recente, recebe
                                        % esta guarda, que substitui os argumentos da
@@ -154,6 +153,7 @@ initMatch(Players, Planets) ->
     Pids = [getPid(Value) || Value <- Values],
 
     MatchPid = self(),
+	memory ! {add_match, [Players, Planets, MatchPid]},
     Tick = spawn(fun() -> receive after 20 -> MatchPid ! {tickover,Players,Planets} end end),    
     receive
         {tickover,DoNotSwitchPlayers,DoNotSwitchPlanets} -> %do initMatch 
@@ -162,6 +162,8 @@ initMatch(Players, Planets) ->
 
         {switch, NextPlayers, NextPlanets} -> %do keyPressed
             exit(Tick,stop),
+            io:format("Players:~p~n", [Players]),
+            io:format("NextPlayers:~p~n", [NextPlayers]),
             Players = NextPlayers,
             Planets = NextPlanets
     end,
@@ -183,47 +185,104 @@ initMatch(Players, Planets) ->
             NewPlayers1 = 
                 detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers)),
             [Pid ! {update_data, #{"Players" => NewPlayers1, "Planets" => (NewPlanets)}} || Pid <- Pids],
-        memory ! {remove, [Players,Planets]},
-        memory ! {add_match, [NewPlayers1, NewPlanets]},
-            initMatch(NewPlayers1, NewPlanets)
+        memory ! {remove, [Players,Planets,MatchPid]},
+        memory ! {add_match, [NewPlayers1, NewPlanets, MatchPid]},
+            initMatch(NewPlayers1, NewPlanets, MatchPid)
+    end.
+
+initMatch(Players, Planets, OldMatchPid) ->
+
+    % Filter to count players who are still in the game
+    TestRemaining = length(maps:keys(maps:filter(fun(_Key, Value) ->
+        {_, _, _, _, _, _, _, _, _, _, _, _, _, InGame, _,_} = Value,
+        InGame
+    end, Players))),
+    
+    % Filter to count players who are not GameOver and still in the game
+    TestWinner = length(maps:keys(maps:filter(fun(_Key, Value) ->
+        {_, _, _, _,  _, _, _, _, _, _, _, _, _, InGame, GameOver,_} = Value,
+        InGame and not GameOver
+    end, Players))),
+    
+    Values = maps:values(Players),
+    Pids = [getPid(Value) || Value <- Values],
+    
+    MatchPid = self(),
+	memory ! {add_match, [Players, Planets, MatchPid]},
+    Tick = spawn(fun() -> receive after 20 -> MatchPid ! {tickover,Players,Planets} end end),    
+    receive
+        {tickover,DoNotSwitchPlayers,DoNotSwitchPlanets} -> %do initMatch 
+            Players = DoNotSwitchPlayers,
+            Planets = DoNotSwitchPlanets;
+
+        {switch, NextPlayers, NextPlanets} -> %do keyPressed
+            exit(Tick,stop),
+            io:format("Players:~p~n", [Players]),
+            io:format("NextPlayers:~p~n", [NextPlayers]),
+            Players = NextPlayers,
+            Planets = NextPlanets
+    end,
+
+    if ((TestRemaining == 0) orelse (TestWinner == 1)) -> memory ! {remove, [Players, Planets]};
+                                                          true -> ok
+    end,
+
+    if
+        (TestRemaining == 0) and (TestWinner == 1) ->
+            [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+        (TestRemaining == 0) ->
+            [Pid ! {tickrate, [Players, Planets]} || Pid <- Pids];
+        true ->
+            NewPlanets =
+                updatePlanetsPos(Planets, length(maps:keys(Planets))-1),
+            NewPlayers =
+                updatePlayersPos({Planets, Players}, maps:keys(Players)),
+            NewPlayers1 = 
+                detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers)),
+            [Pid ! {update_data, #{"Players" => NewPlayers1, "Planets" => (NewPlanets)}} || Pid <- Pids],
+        memory ! {remove, [Players,Planets,MatchPid]},
+        memory ! {add_match, [NewPlayers1, NewPlanets, MatchPid]},
+        memory ! {remove, [Players,Planets,OldMatchPid]},
+            initMatch(NewPlayers1, NewPlanets, MatchPid)
     end.
 %----------------------------HANDLES----------------------------
-handle({"UP", Username},PlayersInfo) ->
-    {X,Y,Vx0,Vy0,Diameter,Angle,
+handle({"up", Username},PlayersInfo) ->
+    {X,Y,LineEndX,LineEndY,Vx0,Vy0,Diameter,Angle,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver, Pid_}= maps:get(Username,PlayersInfo),
-    Vx = Vx0 + 0.5 * math:cos((Angle * math:pi()) / 180), % Apply linear acceleration over Angle direction
-    Vy = Vy0 + 0.5 * math:sin((Angle * math:pi()) / 180), % Apply linear acceleration over Angle direction
-    NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
+    Vx = Vx0 + 0.5 * math:cos(Angle), % Apply linear acceleration over Angle direction
+    Vy = Vy0 + 0.5 * math:sin(Angle), % Apply linear acceleration over Angle direction
+    NewInfo = {X,Y,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
 	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid_},
-    NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
+    NextPlayers = maps:update(Username,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
 
-handle({"LEFT", Username},PlayersInfo) ->
-    {X,Y,Vx0, Vy0,Diameter,Angle0,
+handle({"left", Username},PlayersInfo) ->
+    {X,Y,LineEndX,LineEndY,Vx0, Vy0,Diameter,Angle0,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver,Pid_}= maps:get(Username,PlayersInfo),
-    Angle = (Angle0 + 10) rem 360,
-    Vx = Vx0 * math:cos((Angle * math:pi()) / 180) - Vy0 * math:sin((Angle * math:pi()) / 180),
-    Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
-    NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
+    Angle = (Angle0 + 0.2) rem 2*math:pi(),
+
+    Vx = Vx0 * math:cos(Angle) - Vy0 * math:sin(Angle),
+    Vy = Vx0 * math:sin(Angle) + Vy0 * math:cos(Angle),
+    NewInfo = {X,Y,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
 	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid_},
-    NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
+    NextPlayers = maps:update(Username,NewInfo,PlayersInfo),
     
     {ok,NextPlayers};
 
-handle({"RIGHT", Username},PlayersInfo) ->
-    {X,Y,Vx0, Vy0, Diameter,Angle0,
+handle({"right", Username},PlayersInfo) ->
+    {X,Y,LineEndX,LineEndY,Vx0, Vy0, Diameter,Angle0,
      R,G,B,Fuel,
      WaitingGame,InGame,GameOver, Pid_}= maps:get(Username,PlayersInfo),
     Angle = (Angle0 - 10) rem 360, % Compute new angle in clockwise direction
     Vx = Vx0 * math:cos((Angle * math:pi()) / 180) - Vy0 * math:sin((Angle * math:pi()) / 180),
     Vy = Vx0 * math:sin((Angle * math:pi()) / 180) + Vy0 * math:cos((Angle * math:pi()) / 180),
 
-    NewInfo = {X,Y,Vx,Vy,Diameter,Angle,
+    NewInfo = {X,Y,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
 	       R,G,B,Fuel-math:sqrt(Vx*Vx+Vy*Vy),WaitingGame,InGame,GameOver,Pid_},
-    NextPlayers = maps:update(PlayersInfo,NewInfo,PlayersInfo),
+    NextPlayers = maps:update(Username,NewInfo,PlayersInfo),
 
     {ok,NextPlayers}.
 
@@ -242,15 +301,11 @@ generate_planets(0, Sistema) ->
     Sistema;
 generate_planets(Int,Sistema) ->
     io:format("PlanetaIntSistema~n"), 
-    X = float(randomNumRange(300,1600)),
-    Y = float(randomNumRange(200,850)),
-    DifX = X - 960.0,
-    DifY = Y - 540.0,
-    Distancia = math:sqrt(DifX * DifX + DifY * DifY), 
+    Distancia = Int * randomNumRange(40,100),
     % Ver se vale a pena colocar distancia sol-planeta
     SistemaNovo = Sistema#{Int => {float(Distancia),
-				   X,
-				   Y,
+				   float(randomNumRange(300,1600)),
+				   float(randomNumRange(200,850)),
 				   float(randomNumRange(50,100)),
 				   float(randomNumRange(20,80)),
 				   float(randomNumRange(4,20)),
