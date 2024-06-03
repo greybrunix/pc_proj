@@ -13,14 +13,15 @@
 
 start() ->
     Map = read_json_from_file(),
-    case Map of
-	#{} ->
-	    ok;
-	_ ->
-	    all_offline()
-    end,
+		Empty = maps:new(),
+    register(?MODULE, spawn(fun() -> loop(Map) end)),
+    case Map==Empty of
+			true ->
+				ok;
+			_ ->
+				all_offline()
+		end.
 	
-    register(?MODULE, spawn(fun() -> loop(Map) end)).
 
 rpc(Request) ->
 	?MODULE ! {Request, self()},
