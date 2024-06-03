@@ -99,6 +99,9 @@ matchesOccurring(Matches) ->
             {request_matches, From} -> 
                 From ! {response, Matches, memory},
                 Matches;
+	    {request_mine, From} ->
+		Match = [{Players, Planets} || [Players, Planets, Pid] <- Matches, Pid == From ],
+		From ! {responde, hd(Match), memory};
             {add_match, Match} -> 
                 [Match | Matches];
             {remove, Match} -> 
@@ -165,20 +168,16 @@ initMatch(Players, Planets) ->
     Values = maps:values(Players),
     Pids = [getPid(Value) || Value <- Values],
 
-    MatchPid = self(),
-    Tick = spawn(fun() -> receive after 20 -> MatchPid ! {tickover,Players,Planets} end end),    
-    receive
-        {tickover,DoNotSwitchPlayers,DoNotSwitchPlanets} -> %do initMatch 
-            PlayersNew = DoNotSwitchPlayers,
-            PlanetsNew = DoNotSwitchPlanets;
+    receive after 20 ->
+		    memory ! {request_matches, self()},
+		    receive
+			{response, {Players_, Planets_}} ->
+			    PlayersNew = Players_,
+			    PlanetsNew = Planets_
+		    end
+	    end,
+    
 
-        {switch, NextPlayers, NextPlanets} -> %do keyPressed
-            exit(Tick,stop),
-            io:format("Players:~p~n", [Players]),
-            io:format("NextPlayers:~p~n", [NextPlayers]),
-            PlayersNew = NextPlayers,
-            PlanetsNew = NextPlanets
-    end,
 
     if ((TestRemaining == 0) orelse (TestWinner == 1)) -> memory ! {remove, [Players, Planets]};
                                                           true -> ok
@@ -197,8 +196,8 @@ initMatch(Players, Planets) ->
             NewPlayers1 = 
                 detectPlayerCollisions(NewPlayers, maps:keys(NewPlayers)),
             [Pid ! {update_data, #{"Players" => NewPlayers1, "Planets" => (NewPlanets)}} || Pid <- Pids],
-        memory ! {remove, [PlayersNew,PlanetsNew,MatchPid]},
-        memory ! {add_match, [NewPlayers1, NewPlanets, MatchPid]},
+	    memory ! {remove, [PlayersNew,PlanetsNew,self()]},
+	    memory ! {add_match, [NewPlayers1, NewPlanets, self()]},
             initMatch(NewPlayers1, NewPlanets)
     end.
 
