@@ -41,7 +41,9 @@ parser(Msg, Pid) ->
                       false -> "invalid"
                   end;
         "leaderboard" -> 
-            ok;
+            Leader = login:leaderboard(),
+	    %Pid ! {
+	    "ok";
 
         "logout" ->
             T = login:logout(hd(Cdr)),
