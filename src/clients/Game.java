@@ -111,6 +111,10 @@ public class Game {
         }
     }
 
+    public void keyReleased() {
+        Interface.keyReleased(me.username);
+    }
+
     public void waitGame(String username) throws IOException, InterruptedException {
         Interface.wantPlay(username);
         me.username = username;
