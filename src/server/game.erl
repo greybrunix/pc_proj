@@ -112,6 +112,7 @@ get_matches() ->
     end.
 
 keyPressed(Key,Username,[Players, Planets, Pid]) -> 
+    io:format("Entrei no keyPressed~n"),
     {ok,Next} = handle({Key,Username},Players),
     NewMatch = [Next,Planets],
 
@@ -135,6 +136,8 @@ getPid(Value) ->
 
 
 initMatch(Players, Planets) ->
+    
+    io:format("Starting initMatch with Players: ~p~n", [Players]),
 
     % Filter to count players who are still in the game
     TestRemaining = length(maps:keys(maps:filter(fun(_Key, Value) ->
@@ -191,6 +194,8 @@ initMatch(Players, Planets) ->
 
 initMatch(Players, Planets, OldMatchPid) ->
 
+    io:format("Starting initMatch with Players: ~p~n", [Players]),
+
     % Filter to count players who are still in the game
     TestRemaining = length(maps:keys(maps:filter(fun(_Key, Value) ->
         {_, _, _, _, _, _, _, _, _, _, _, _, _, InGame, _,_} = Value,
@@ -207,6 +212,7 @@ initMatch(Players, Planets, OldMatchPid) ->
     Pids = [getPid(Value) || Value <- Values],
     
     MatchPid = self(),
+    memory ! {remove, [Players,Planets,OldMatchPid]},
 	memory ! {add_match, [Players, Planets, MatchPid]},
     Tick = spawn(fun() -> receive after 20 -> MatchPid ! {tickover,Players,Planets} end end),    
     receive
@@ -241,7 +247,6 @@ initMatch(Players, Planets, OldMatchPid) ->
             [Pid ! {update_data, #{"Players" => NewPlayers1, "Planets" => (NewPlanets)}} || Pid <- Pids],
         memory ! {remove, [Players,Planets,MatchPid]},
         memory ! {add_match, [NewPlayers1, NewPlanets, MatchPid]},
-        memory ! {remove, [Players,Planets,OldMatchPid]},
             initMatch(NewPlayers1, NewPlanets, MatchPid)
     end.
 %----------------------------HANDLES----------------------------
@@ -251,7 +256,11 @@ handle({"up", Username},PlayersInfo) ->
      WaitingGame,InGame,GameOver, Pid_}= maps:get(Username,PlayersInfo),
     Vx = Vx0 + 0.5 * math:cos(Angle), % Apply linear acceleration over Angle direction
     Vy = Vy0 + 0.5 * math:sin(Angle), % Apply linear acceleration over Angle direction
-    NewInfo = {X,Y,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
+    NewX = X + Vx,
+    NewY = Y + Vy,
+    io:format("X: ~p Y: ~p~n", [X, Y]),
+    io:format("NewX: ~p NewY: ~p~n", [NewX, NewY]),
+    NewInfo = {NewX,NewY,LineEndX,LineEndY,Vx,Vy,Diameter,Angle,
 	       R,G,B,Fuel,WaitingGame,InGame,GameOver,Pid_},
     NextPlayers = maps:update(Username,NewInfo,PlayersInfo),
     
