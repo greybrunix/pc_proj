@@ -271,7 +271,7 @@ generate_planets(Int,Sistema) ->
     SistemaNovo = Sistema#{Int => {float(Distancia),
 				   float(X),
 				   float(Y),
-				   float(randomNumRange(20,100)),
+				   float(randomNumRange(30,110)),
 				   float(randomNumRange(90,255)),
 				   float(randomNumRange(90,255)),
 				   float(randomNumRange(90,255))}},
@@ -289,11 +289,11 @@ newPlayerPos(Pid, Player,Map) ->
         Y0 >= 540.0 -> Y = 900.0;
         Y0 < 540.0 -> Y = 100.0
     end,
-    LineLength = 20.0, 
+    LineLength = 40.0, 
     LineEndX = X + math:cos(0) * LineLength,
     LineEndY = Y + math:sin(0) * LineLength,
     MapNew = Map#{Player => {float(X),float(Y),float(LineEndX),float(LineEndY),0.0,
-			     0.0,10.0,
+			     0.0,20.0,
 			     0.0,
 			     float(randomNumRange(90,255)),
 			     float(randomNumRange(90,255)),
@@ -345,7 +345,7 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
     Vx = Vx0,
     Vy = Vy0,
     
-    LineLength = 10,
+    LineLength = 40,
     LineEndX = X + math:cos(Angle) * LineLength,
     LineEndY = Y + math:sin(Angle) * LineLength,
 
