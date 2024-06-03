@@ -116,7 +116,7 @@ get_matches() ->
         {response, Matches, memory} -> Matches
     end.
 
-keyPressed(Key,Username,[Players, Planets, Pid]) -> 
+keyPressed(Key,Username,{Players, Planets, Pid}) -> 
     {ok,Next} = handle({Key,Username},Players),
     NewMatch = {Next,Planets,Pid},
 
@@ -125,7 +125,7 @@ keyPressed(Key,Username,[Players, Planets, Pid]) ->
 
     "ok".
 
-keyReleased(Username, [Players,Planets,Pid]) ->
+keyReleased(Username, {Players,Planets,Pid}) ->
     {ok,Next} = handle({"released",Username},Players),
 
     NextMatch = {Next,Planets,Pid},
@@ -256,7 +256,7 @@ randomNumRange(Small,Big) ->
     rand:uniform(Big - Small + 1) + Small - 1.
 
 generate_planets(Int) -> 
-    Sistema = #{0 => {0.0,960.0,540.0,0.0,0.0,35.0,255.0,255.0,0.0}}, % here comes the sun
+    Sistema = #{0 => {0.0,960.0,540.0,35.0,255.0,255.0,0.0}}, % here comes the sun
     generate_planets(Int, Sistema).
 
 generate_planets(0, Sistema) ->
@@ -271,8 +271,6 @@ generate_planets(Int,Sistema) ->
     SistemaNovo = Sistema#{Int => {float(Distancia),
 				   float(X),
 				   float(Y),
-				   float(randomNumRange(50,100)),
-				   float(randomNumRange(20,80)),
 				   float(randomNumRange(4,20)),
 				   float(randomNumRange(90,255)),
 				   float(randomNumRange(90,255)),
@@ -318,30 +316,25 @@ through_players([],Map) ->
 
 updatePlanetsPos(Planets, 0) ->
     Planets;
+
 updatePlanetsPos(Planets,NumPlanet) ->
 %TODO calculos dos planetas por tick
-    {Dist, X0, Y0, Vx0, Vy0, Diameter, R, G, B} =
-	maps:get(NumPlanet, Planets),
-    V = math:sqrt(Vx0*Vx0 + Vy0*Vy0),
-    Ac = V*V/Dist,
-    Theta = 0,
-    Ax = -Ac * math:cos(Theta),
-    Ay = -Ac * math:sin(Theta),
-    X = X0 + Vx0*0.0021 + Ax*0.0021*0.0021/2,
-    Y = Y0 + Vy0*0.0021 + Ay*0.0021*0.0021/2,
-    Vx = Vx0 + Ax*0.0021,
-    Vy = Vy0 + Ay*0.0021,
+    {Dist, X0, Y0, Diameter, R, G, B} =
+    maps:get(NumPlanet, Planets),
+    
+    Theta = math:atan2(Y0 - 540.0,X0 - 960.0), % do vetor sol terra
+    NewTheta = Theta + (1000/Dist) * 0.0021,
+    
+    X = 960.0 + Dist * math:cos(NewTheta),
+    Y = 540.0 + Dist * math:sin(NewTheta),
     NewPlanet = {Dist,
-		 X,
-		 Y,
-		 Vx,
-		 Vy,
-		 Diameter,
-		 R,G,B
-		},
+         X,
+         Y,
+         Diameter,
+         R,G,B
+        },
     NewPlanets = maps:update(NumPlanet, NewPlanet, Planets),
     updatePlanetsPos(NewPlanets,NumPlanet-1).
-
 updatePlayersPos({_Planets,Players}, []) ->
     Players;
 updatePlayersPos({Planets, Players}, [Player | T]) ->
@@ -358,7 +351,7 @@ updatePlayersPos({Planets, Players}, [Player | T]) ->
 
     PlanetsList = maps:to_list(Planets),
 
-    CollidingPlanets = lists:filter(fun({_, {_, PX, PY, _, _, PDiameter, _, _, _}}) ->
+    CollidingPlanets = lists:filter(fun({_, {_, PX, PY, PDiameter, _, _, _}}) ->
     Distance = math:sqrt((X - PX) * (X - PX) + (Y - PY) * (Y - PY)),
     RadiusSum = (Diameter / 2) + (PDiameter / 2),
     Distance < RadiusSum
