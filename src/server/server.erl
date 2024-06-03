@@ -50,6 +50,7 @@ parser(Msg, Pid) ->
 	    Matches = game:get_matches(),
 	    Match = [case maps:is_key(lists:last(Cdr),Participants) of
 			 true -> [Participants,Planets,Pid] end|| [Participants,Planets,Pid]<-Matches],
+        io:format("Matches Player: ~p~n", [Match]),
 	    case length(Match) of
 		1 -> game:keyPressed(hd(Cdr),lists:last(Cdr),hd(Match)); % TODO verificar se já esta numa partida
 		_ -> "invalid"
@@ -71,8 +72,8 @@ room(Pids) ->
 user(Sock, Room) ->
     Player = self(),
     receive
-        {in_match,Match} ->
-            self() ! {update_data,Match};
+        %{in_match,Match} ->
+        %    self() ! {update_data,Match};
         {line, Data} ->
             gen_tcp:send(Sock, Data),
             user(Sock,Room);
@@ -91,7 +92,7 @@ user(Sock, Room) ->
             gen_tcp:send(Sock, <<JsonMatch/binary, "\n">>), % Adding newline for clarity
             user(Sock, Room);
         {match,Participants,Planets} ->
-            self() ! {update_data, [Participants,Planets]},
+            self() ! {update_data, #{"Players" => Participants,"Planets" => Planets}},
             user(Sock, Room)
     end.
 
