@@ -256,7 +256,7 @@ randomNumRange(Small,Big) ->
     rand:uniform(Big - Small + 1) + Small - 1.
 
 generate_planets(Int) -> 
-    Sistema = #{0 => {0.0,960.0,540.0,35.0,255.0,255.0,0.0}}, % here comes the sun
+    Sistema = #{0 => {0.0,960.0,540.0,200.0,255.0,255.0,0.0}}, % here comes the sun
     generate_planets(Int, Sistema).
 
 generate_planets(0, Sistema) ->
@@ -271,7 +271,7 @@ generate_planets(Int,Sistema) ->
     SistemaNovo = Sistema#{Int => {float(Distancia),
 				   float(X),
 				   float(Y),
-				   float(randomNumRange(4,20)),
+				   float(randomNumRange(20,100)),
 				   float(randomNumRange(90,255)),
 				   float(randomNumRange(90,255)),
 				   float(randomNumRange(90,255))}},
@@ -289,11 +289,11 @@ newPlayerPos(Pid, Player,Map) ->
         Y0 >= 540.0 -> Y = 900.0;
         Y0 < 540.0 -> Y = 100.0
     end,
-    LineLength = 10.0, 
+    LineLength = 20.0, 
     LineEndX = X + math:cos(0) * LineLength,
     LineEndY = Y + math:sin(0) * LineLength,
     MapNew = Map#{Player => {float(X),float(Y),float(LineEndX),float(LineEndY),0.0,
-			     0.0,5.0,
+			     0.0,10.0,
 			     0.0,
 			     float(randomNumRange(90,255)),
 			     float(randomNumRange(90,255)),
