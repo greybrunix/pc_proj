@@ -42,9 +42,7 @@ parser(Msg, Pid) ->
                   end;
         "leaderboard" -> 
             Leader = login:leaderboard(),
-	    %Pid ! {
-						io_lib:format("~p~n", [Leader]);
-
+						Leader;
         "logout" ->
             T = login:logout(hd(Cdr)),
             io_lib:format("~p~n", [T]);

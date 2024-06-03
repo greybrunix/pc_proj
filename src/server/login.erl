@@ -191,13 +191,13 @@ handle({add_loss, User}, Map) ->
 	    {op, Map}
     end;    
 handle(leaderboard, Map) ->
-    OnlineUsers = [#{Username => #{<<"level">> => maps:get(<<"level">>, UserData),
+    OnlineUsers = #{<<"players">> => [#{Username => #{<<"level">> => maps:get(<<"level">>, UserData),
 				   <<"victories_in_row">> =>maps:get(<<"wins">>, UserData),
 				   <<"losses_in_row">> => maps:get(<<"losses">>, UserData)}}
-		   || {Username, UserData} <- maps:to_list(Map)],
+		   || {Username, UserData} <- maps:to_list(Map)]},
     OnlineJson = jsx:encode(OnlineUsers),
-    io:format("~p~n", [binary_to_list(<<OnlineJson/binary, "\n">>)]),
-    {OnlineUsers, Map}.
+    OnlineJSON = io_lib:format("~p~n", [binary_to_list(<<OnlineJson/binary, "\n">>)]),
+    {OnlineJSON, Map}.
 write_json_to_file(Map) ->
     Json = jsx:encode(Map),
     {ok, File} = file:open("accounts.json", [write]),
