@@ -114,9 +114,9 @@ get_matches() ->
 keyPressed(Key,Username,[Players, Planets, Pid]) -> 
     io:format("Entrei no keyPressed~n"),
     {ok,Next} = handle({Key,Username},Players),
-    NewMatch = [Next,Planets],
+    NewMatch = [Next,Planets,Pid],
 
-    memory ! {remove,[Players,Planets]},
+    memory ! {remove,[Players,Planets,Pid]},
     memory ! {add_match,NewMatch},
 
     io:format("Next: ~p~n", [Next]),
