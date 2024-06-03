@@ -43,7 +43,7 @@ parser(Msg, Pid) ->
         "leaderboard" -> 
             Leader = login:leaderboard(),
 	    %Pid ! {
-	    "ok";
+	    Leader;
 
         "logout" ->
             T = login:logout(hd(Cdr)),
@@ -51,18 +51,18 @@ parser(Msg, Pid) ->
 	"key" -> 
 	    Matches = game:get_matches(),
 	    Match = [case maps:is_key(lists:last(Cdr),Participants) of
-			 true -> [Participants,Planets,Pid] end|| [Participants,Planets,Pid]<-Matches],
+			 true -> {Participants,Planets,Pid} end || {Participants,Planets,Pid}<-Matches],
         io:format("Matches Player: ~p~n", [Match]),
 	    case length(Match) of
-		1 -> game:keyPressed(hd(Cdr),lists:last(Cdr),hd(Match)); % TODO verificar se já esta numa partida
+		1 -> game:keyPressed(hd(Cdr),lists:last(Cdr),hd(Match));
 		_ -> "invalid"
 	    end;
 	"released" -> 
 	    Matches = game:get_matches(),
 	    Match = [case maps:is_key(lists:last(Cdr),Participants) of
-			 true -> [Participants,Planets,Pid] end|| [Participants,Planets,Pid]<-Matches],
+			 true -> {Participants,Planets,Pid} end || {Participants,Planets,Pid}<-Matches],
 	    case length(Match) of
-		1 -> game:keyReleased(hd(Cdr),hd(Match)); % TODO verificar se já esta numa partida
+		1 -> game:keyReleased(hd(Cdr),hd(Match));
 		_ -> "invalid"
 	    end;
 	_ ->
