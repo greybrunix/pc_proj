@@ -101,7 +101,7 @@ matchesOccurring(Matches) ->
                 Matches;
 	    {request_mine, From} ->
 		Match = [{Players, Planets} || [Players, Planets, Pid] <- Matches, Pid == From ],
-		From ! {responde, hd(Match), memory};
+		From ! {responde, hd(Match)};
             {add_match, Match} -> 
                 [Match | Matches];
             {remove, Match} -> 
