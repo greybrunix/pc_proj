@@ -43,7 +43,7 @@ parser(Msg, Pid) ->
         "leaderboard" -> 
             Leader = login:leaderboard(),
 						io:format("~p~n", [Leader]),
-						Leader;
+						<<Leader/binary, "\n">>;
         "logout" ->
             T = login:logout(hd(Cdr)),
             io_lib:format("~p~n", [T]);
@@ -98,7 +98,7 @@ user(Sock, Room) ->
         {update_data, Match} ->
             NewMatch  = formatMatch(Match),
             JsonMatch = jsx:encode(NewMatch),
-            gen_tcp:send(Sock, <<JsonMatch/binary, "\n">>), % Adding newline for clarity
+            gen_tcp:send(Sock, <<JsonMatch/binary, "\n">>),
             user(Sock, Room);
         {match,Participants,Planets} ->
             self() ! {update_data, #{"Players" => Participants,"Planets" => Planets}},
@@ -138,7 +138,7 @@ formatMatchPlayer(Map, [Username | T]) ->
 formatMatchPlanets(Map, []) ->
     Map;
 formatMatchPlanets(Map, [Num | T]) ->
-    {Dist, X, Y, _Vx, _Vy, Diameter, R, G, B} =
+    {Dist, X, Y, Diameter, R, G, B} =
 	maps:get(Num, Map),
 
     NewMap0 = maps:remove(Num, Map),
