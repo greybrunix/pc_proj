@@ -191,12 +191,12 @@ handle({add_loss, User}, Map) ->
 	    {op, Map}
     end;    
 handle(leaderboard, Map) ->
-    OnlineUsers = #{<<"players">> => [#{Username => #{<<"level">> => maps:get(<<"level">>, UserData),
-				   <<"victories_in_row">> =>maps:get(<<"wins">>, UserData),
-				   <<"losses_in_row">> => maps:get(<<"losses">>, UserData)}}
+    OnlineUsers = #{<<"players">> => [#{Username => #{<<"level">> => integer_to_binary(list_to_integer(binary_to_list(maps:get(<<"level">>, UserData)))),
+				   <<"victories_in_row">> => integer_to_binary(list_to_integer(binary_to_list(maps:get(<<"wins">>, UserData)))),
+				   <<"losses_in_row">> => integer_to_binary(list_to_integer(binary_to_list(maps:get(<<"losses">>, UserData))))}}
 		   || {Username, UserData} <- maps:to_list(Map)]},
     OnlineJson = jsx:encode(OnlineUsers),
-    OnlineJSON = io_lib:format("~p~n", [binary_to_list(<<OnlineJson/binary, "\n">>)]),
+    OnlineJSON = io_lib:format("~p", [binary_to_list(<<OnlineJson/binary, "\n">>)]),
     {OnlineJSON, Map}.
 write_json_to_file(Map) ->
     Json = jsx:encode(Map),
