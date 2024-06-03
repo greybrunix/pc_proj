@@ -55,6 +55,14 @@ parser(Msg, Pid) ->
 		1 -> game:keyPressed(hd(Cdr),lists:last(Cdr),hd(Match)); % TODO verificar se já esta numa partida
 		_ -> "invalid"
 	    end;
+	"released" -> 
+	    Matches = game:get_matches(),
+	    Match = [case maps:is_key(lists:last(Cdr),Participants) of
+			 true -> [Participants,Planets,Pid] end|| [Participants,Planets,Pid]<-Matches],
+	    case length(Match) of
+		1 -> game:keyReleased(hd(Cdr),hd(Match)); % TODO verificar se já esta numa partida
+		_ -> "invalid"
+	    end;
 	_ ->
 	    io_lib:format("~p~n", [no_command])
     end.
